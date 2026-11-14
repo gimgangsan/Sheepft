@@ -1,0 +1,16 @@
+{
+    "name": "Sheepft.Game",
+    "rootNamespace": "Sheepft.Game",
+    "references": [
+        "Sheepft.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,2 +1,4 @@
 ﻿<Solution>
+  <Project Path="Sheepft.Tests.csproj" />
+  <Project Path="Sheepft.Core.csproj" />
 </Solution>
