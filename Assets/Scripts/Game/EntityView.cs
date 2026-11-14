@@ -6,7 +6,7 @@ namespace Sheepft.Game
 {
     /// <summary>
     /// 오브젝트 하나의 화면 모습. 로직의 엔티티를 Id로 따라간다.
-    /// 화면에 보이는 상태(젖음, 화상, 물 참, 마리 수)는 따로 갖고 있다가,
+    /// 화면에 보이는 상태(젖음, 화상, 물 참, 기절, 식사, 마리 수)는 따로 갖고 있다가,
     /// 이벤트를 재생하며 하나씩 바꾼다.
     /// </summary>
     public sealed class EntityView : MonoBehaviour
@@ -14,13 +14,16 @@ namespace Sheepft.Game
         private const float Pixel = 1f / 32f;
 
         public int Id { get; private set; }
+
+        /// <summary>스프라이트 파일 이름. 예: `sheep`, `fruit_basket`</summary>
+        public string Sheet { get; private set; }
         public Pos Pos;
 
         /// <summary>칸의 아래쪽 가운데. 같은 칸에 여럿이면 여기에 LayoutOffset을 더해 놓는다.</summary>
         public Vector3 BasePosition;
         public Vector3 LayoutOffset;
 
-        public bool Wet, Burned, Filled;
+        public bool Wet, Burned, Filled, Stunned, Eating, HasTarget, Full;
         public int Count = 1;
 
         private SpriteCatalog catalog;
@@ -31,6 +34,11 @@ namespace Sheepft.Game
         private SpriteAnimator iconAnimator;
         private readonly List<SpriteRenderer> packCopies = new List<SpriteRenderer>();
         private bool isBucket;
+        private bool isCow;
+
+        /// <summary>잠깐 재생하는 동작 태그(`walk`, `eat`). 없으면 null이고 평소 태그를 쓴다.</summary>
+        private string actionTag;
+        private bool actionOnce;
         private float alpha = 1f;
 
         public static string SheetName(ObjectEntity o)
@@ -50,7 +58,9 @@ namespace Sheepft.Game
             catalog = spriteCatalog;
             Id = o.Id;
             isBucket = o is Bucket;
-            sheet = catalog.Get(SheetName(o));
+            isCow = o is Cow;
+            Sheet = SheetName(o);
+            sheet = catalog.Get(Sheet);
 
             body = gameObject.AddComponent<SpriteRenderer>();
             bodyAnimator = gameObject.AddComponent<SpriteAnimator>();
@@ -75,6 +85,12 @@ namespace Sheepft.Game
             Filled = bucket != null && bucket.Filled;
             var wolf = o as Wolf;
             Count = wolf != null ? wolf.Count : 1;
+            Stunned = wolf != null && wolf.IsStunned;
+            Eating = wolf != null && wolf.IsEating;
+            var seeker = o as BasketSeeker;
+            HasTarget = seeker != null && seeker.HasTarget;
+            Full = seeker != null && seeker.Full;
+            actionTag = null;
             SetAlpha(1f);
             RefreshVisuals();
         }
@@ -84,16 +100,65 @@ namespace Sheepft.Game
             if (status == StatusKind.Wet) Wet = on;
             else if (status == StatusKind.Burned) Burned = on;
             else if (status == StatusKind.Filled) Filled = on;
+            else if (status == StatusKind.Stunned) Stunned = on;
+            else if (status == StatusKind.Eating)
+            {
+                Eating = on;
+                if (on) PlayAction("eat", true); // 양을 덮쳐 먹는 동작을 한 번 보여 준다.
+            }
+            else if (status == StatusKind.Full)
+            {
+                Full = on;
+                if (on) PlayAction("eat", true); // 말·소가 바구니를 먹는 동작.
+            }
+            RefreshVisuals();
+        }
+
+        /// <summary>말·소가 목표 바구니를 얻거나 잃었다.</summary>
+        public void SetTarget(bool hasTarget)
+        {
+            HasTarget = hasTarget;
+            RefreshVisuals();
+        }
+
+        public void SetCount(int count)
+        {
+            Count = count;
+            RefreshVisuals();
+        }
+
+        /// <summary>
+        /// 동작 태그를 재생한다. 그 태그가 없는 스프라이트면 아무것도 하지 않는다.
+        /// once이면 한 번 재생한 뒤 평소 태그로 돌아가고, 아니면 StopAction을 부를 때까지 반복한다.
+        /// </summary>
+        public void PlayAction(string tag, bool once)
+        {
+            if (sheet == null || sheet.Tag(tag) == null) return;
+            actionTag = tag;
+            actionOnce = once;
+            bodyAnimator.Play(sheet, tag, !once);
+        }
+
+        public void StopAction(string tag)
+        {
+            if (actionTag != tag) return;
+            actionTag = null;
             RefreshVisuals();
         }
 
         public void RefreshVisuals()
         {
             string bodyTag = isBucket ? (Filled ? "full" : "empty") : "idle";
-            if (bodyAnimator.CurrentTag != bodyTag) bodyAnimator.Play(sheet, bodyTag);
+            if (actionTag == null && bodyAnimator.CurrentTag != bodyTag) bodyAnimator.Play(sheet, bodyTag);
 
-            // 상태 아이콘은 머리 위에 하나만 보여 준다. 화상이 젖음보다 먼저다.
-            string iconTag = Burned ? "burned" : Wet ? "wet" : null;
+            // 상태 아이콘은 머리 위에 하나만 보여 준다. 화상 > 기절 > 식사 > 배부름 > 발견·냄새 > 젖음 순이다.
+            string iconTag = Burned ? "burned"
+                : Stunned ? "stunned"
+                : Eating ? "eating"
+                : Full ? "full"
+                : HasTarget ? (isCow ? "smell" : "found")
+                : Wet ? "wet"
+                : null;
             var icons = catalog.Get("status_icons");
             if (iconTag == null || icons == null)
             {
@@ -147,6 +212,8 @@ namespace Sheepft.Game
 
         private void LateUpdate()
         {
+            if (actionTag != null && actionOnce && bodyAnimator.Finished) StopAction(actionTag);
+
             foreach (var copy in packCopies)
             {
                 if (!copy.enabled) continue;

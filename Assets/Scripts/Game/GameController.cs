@@ -41,7 +41,11 @@ namespace Sheepft.Game
 
         private readonly List<Arrow> arrows = new List<Arrow>();
         private Transform arrowRoot;
-        private SpriteButton undoButton, restartButton, nextButton;
+        private SpriteButton undoButton, restartButton, nextButton, levelButton;
+        private LevelSelect levelSelect;
+
+        /// <summary>이번 실행에서 클리어한 스테이지(0부터). 저장하지 않는다.</summary>
+        private readonly HashSet<int> cleared = new HashSet<int>();
         private SpriteButton pressedButton;
         private Coroutine playback;
         private float aspect;
@@ -70,6 +74,9 @@ namespace Sheepft.Game
             undoButton = new SpriteButton(uiRoot, catalog.Get("button_undo"), "undo", UiOrder, Undo);
             restartButton = new SpriteButton(uiRoot, catalog.Get("button_restart"), "restart", UiOrder, Restart);
             nextButton = new SpriteButton(uiRoot, catalog.Get("button_next"), "next", UiOrder, NextStage);
+            levelButton = new SpriteButton(uiRoot, catalog.Get("button_level_select"), "level select", UiOrder, OpenLevelSelect);
+            levelSelect = NewChild("level select").gameObject.AddComponent<LevelSelect>();
+            levelSelect.Setup(catalog);
 
             stageCount = LevelParser.ParseAll(catalog.stages.text).Count;
             LoadStage(Mathf.Clamp(startStage, 0, stageCount - 1));
@@ -130,18 +137,22 @@ namespace Sheepft.Game
 
         private void PlaceUi()
         {
-            // 맵은 x 0..너비, y -높이..0. 화살표가 사방으로 한 칸, 그 위에 HUD 한 줄이 더 있다.
+            // 맵은 x 0..너비, y -높이..0. 화살표가 사방으로 한 칸, 그 위에 HUD 한 줄, 아래에 버튼 한 줄이 더 있다.
             float left = -1f, right = Board.Width + 1f;
             float bottom = -Board.Height - 1f, top = 1f;
             float hudY = top + 0.25f;
             float hudTop = hudY + 1f;
+            float barY = bottom - 0.75f;
+            float barBottom = barY - 0.5f;
 
             hud.Place(new Vector3(left, hudY, 0f), new Vector3((left + right) * 0.5f, hudY, 0f));
             restartButton.SetCenter(new Vector3(right - 0.5f, hudY + 0.5f, 0f));
             undoButton.SetCenter(new Vector3(right - 1.6f, hudY + 0.5f, 0f));
-            nextButton.SetCenter(new Vector3((left + right) * 0.5f, hudY + 0.5f, 0f));
+            // 아래 줄: 왼쪽에 레벨 선택, 가운데에 다음 스테이지. HUD의 숫자와 겹치지 않게 맵 아래에 둔다.
+            levelButton.SetCenter(new Vector3(left + 0.5f, barY, 0f));
+            nextButton.SetCenter(new Vector3((left + right) * 0.5f, barY, 0f));
 
-            FitCamera(left, right, bottom, hudTop);
+            FitCamera(left, right, barBottom, hudTop);
         }
 
         private void FitCamera(float left, float right, float bottom, float top)
@@ -174,9 +185,19 @@ namespace Sheepft.Game
                 world.z = 0f;
             }
 
+            // 레벨 선택 화면이 열려 있으면 그것만 받는다. 번호를 누르면 그 스테이지를 열고, Esc나 빈 곳은 닫는다.
+            if (levelSelect.IsOpen)
+            {
+                int hit = levelSelect.Hover(world);
+                bool escape = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+                if (click && hit >= 0) { levelSelect.Close(); LoadStage(hit); }
+                else if (click || escape) levelSelect.Close();
+                return;
+            }
+
             if (keyboard != null)
             {
-                // 레벨 선택 화면이 생길 때까지 쓰는 임시 키.
+                // 개발용 키: 이전·다음 스테이지.
                 if (keyboard.leftBracketKey.wasPressedThisFrame && stageIndex > 0) { LoadStage(stageIndex - 1); return; }
                 if (keyboard.rightBracketKey.wasPressedThisFrame && stageIndex < stageCount - 1) { LoadStage(stageIndex + 1); return; }
             }
@@ -203,7 +224,7 @@ namespace Sheepft.Game
 
         private void UpdateButtons(Vector3 world, bool click, bool release)
         {
-            foreach (var button in new[] { undoButton, restartButton, nextButton })
+            foreach (var button in new[] { undoButton, restartButton, nextButton, levelButton })
             {
                 bool over = button.Contains(world);
                 if (click && over) pressedButton = button;
@@ -246,6 +267,7 @@ namespace Sheepft.Game
         private void Play(ShiftPoint move)
         {
             if (!session.Play(move)) return;
+            if (Board.Result == GameResult.Won) cleared.Add(stageIndex);
             boardView.ShowLine(null);
             SetArrowTag("disabled");
             RefreshHud();
@@ -266,6 +288,17 @@ namespace Sheepft.Game
             session.Restart();
             boardView.SyncAll(Board);
             RefreshUi();
+        }
+
+        private void OpenLevelSelect()
+        {
+            FinishPlaybackIfAny();
+            if (cam != null) levelSelect.Open(cam, stageCount, stageIndex, cleared);
+        }
+
+        private void FinishPlaybackIfAny()
+        {
+            if (playback != null) FinishPlayback();
         }
 
         private void NextStage()
@@ -305,12 +338,35 @@ namespace Sheepft.Game
                 if (moved != null && boardView.View(moved.Id) != null) moves.Add(moved);
             }
 
+            // 걷기 전에 보여 줄 것: 염소의 공격 동작. 소가 앞 칸을 밀며 걸으면 `push` 동작을 쓴다.
+            bool cowPush = false;
+            foreach (var e in step)
+            {
+                var attacked = e as AttackedEvent;
+                if (attacked != null && boardView.View(attacked.Id) != null)
+                {
+                    var goat = boardView.View(attacked.Id);
+                    goat.PlayAction("attack", true);
+                    foreach (var dir in new[] { Dir.Up, Dir.Right, Dir.Down, Dir.Left })
+                        if (boardView.InGrid(goat.Pos.Step(dir)))
+                            boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                }
+                var pushed = e as MovedEvent;
+                if (pushed != null && pushed.Cause == MoveCause.CowPush)
+                {
+                    if (!cowPush) boardView.SpawnEffect("cow_impact", pushed.From, DirAngle(DirBetween(pushed.From, pushed.To)));
+                    cowPush = true;
+                }
+            }
+            string walkTag = cowPush ? "push" : "walk";
+
             if (moves.Count > 0)
             {
                 foreach (var m in moves)
                 {
                     if (m.To.Col != m.From.Col || m.Cause == MoveCause.Shift && move.Axis == Axis.Row)
                         boardView.View(m.Id).SetFlip(FacesLeft(m, move));
+                    if (m.Cause == MoveCause.Walk) boardView.View(m.Id).PlayAction(walkTag, false);
                 }
 
                 for (float t = 0f; t < MoveSeconds; t += Time.deltaTime)
@@ -324,6 +380,10 @@ namespace Sheepft.Game
                     var view = boardView.View(m.Id);
                     view.Pos = m.To;
                     view.SetAlpha(1f);
+                    view.StopAction(walkTag);
+                    // 양이 풀에 도착했다.
+                    if (view.Sheet == "sheep" && !view.Wet && !view.Burned && boardView.ShowsGrass(m.To))
+                        boardView.SpawnEffect("sheep_arrive", m.To);
                 }
                 boardView.Layout();
             }
@@ -335,18 +395,96 @@ namespace Sheepft.Game
                 if (status != null)
                 {
                     var view = boardView.View(status.Id);
-                    if (view != null) view.ApplyStatus(status.Status, status.On);
+                    if (view != null)
+                    {
+                        // 물에 젖거나 물이 차면 물보라, 들불에서 마르거나 불을 끄면 수증기.
+                        // 양동이는 물이 차고 비는 것만 본다(같은 단계에 젖음도 함께 바뀌므로 두 번 나오지 않게).
+                        bool water = status.Status == StatusKind.Filled
+                            || status.Status == StatusKind.Wet && !HasFilledChange(step, status.Id);
+                        if (water) boardView.SpawnEffect(EffectForWater(status), view.Pos);
+                        view.ApplyStatus(status.Status, status.On);
+                    }
+                    other = true;
+                }
+                var target = e as TargetChangedEvent;
+                if (target != null)
+                {
+                    var view = boardView.View(target.Id);
+                    if (view != null) view.SetTarget(target.TargetId >= 0);
+                    other = true;
+                }
+                var count = e as CountChangedEvent;
+                if (count != null)
+                {
+                    var view = boardView.View(count.Id);
+                    if (view != null) view.SetCount(count.Count);
                     other = true;
                 }
                 var terrain = e as TerrainChangedEvent;
-                if (terrain != null) { boardView.SetTerrain(terrain.Pos, terrain.To); other = true; }
+                if (terrain != null)
+                {
+                    boardView.SetTerrain(terrain.Pos, terrain.To);
+                    if (terrain.To == TerrainType.Fire) boardView.SpawnEffect("ignite", terrain.Pos);
+                    other = true;
+                }
                 var removed = e as RemovedEvent;
-                if (removed != null) { boardView.RemoveView(removed.Id); other = true; }
+                if (removed != null)
+                {
+                    var view = boardView.View(removed.Id);
+                    if (view != null) boardView.SpawnEffect(RemoveEffect(view, removed.Cause), view.Pos);
+                    boardView.RemoveView(removed.Id);
+                    other = true;
+                }
             }
             if (other)
             {
                 boardView.Layout();
                 yield return new WaitForSeconds(StepPauseSeconds);
+            }
+        }
+
+        /// <summary>젖음이 켜지거나 물이 차면 물보라, 꺼지면(들불에서 마름, 불을 끔) 수증기.</summary>
+        private static string EffectForWater(StatusChangedEvent status)
+        {
+            return status.On ? "splash" : "steam";
+        }
+
+        private static bool HasFilledChange(List<GameEvent> step, int id)
+        {
+            foreach (var e in step)
+            {
+                var status = e as StatusChangedEvent;
+                if (status != null && status.Id == id && status.Status == StatusKind.Filled) return true;
+            }
+            return false;
+        }
+
+        private static string RemoveEffect(EntityView view, RemoveCause cause)
+        {
+            switch (cause)
+            {
+                case RemoveCause.Eaten: return view.Sheet == "sheep" ? "sheep_eaten" : "eat_crumbs";
+                case RemoveCause.Merged: return "wolf_merge_dust";
+                default: return "smoke";
+            }
+        }
+
+        private static Dir DirBetween(Pos from, Pos to)
+        {
+            if (to.Row < from.Row) return Dir.Up;
+            if (to.Row > from.Row) return Dir.Down;
+            return to.Col < from.Col ? Dir.Left : Dir.Right;
+        }
+
+        /// <summary>오른쪽을 보는 그림을 그 방향으로 돌리는 각도.</summary>
+        private static float DirAngle(Dir dir)
+        {
+            switch (dir)
+            {
+                case Dir.Up: return 90f;
+                case Dir.Left: return 180f;
+                case Dir.Down: return -90f;
+                default: return 0f;
             }
         }
 
@@ -425,6 +563,7 @@ namespace Sheepft.Game
             RefreshHud();
             undoButton.Visible = true;
             restartButton.Visible = true;
+            levelButton.Visible = true;
             nextButton.Visible = Board.Result == GameResult.Won && stageIndex < stageCount - 1;
             SetArrowTag(Board.Result == GameResult.InProgress ? "normal" : "disabled");
         }

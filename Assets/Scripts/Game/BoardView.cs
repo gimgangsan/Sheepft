@@ -29,7 +29,7 @@ namespace Sheepft.Game
         private SpriteAnimator[,] terrainAnimators;
         private readonly Dictionary<int, EntityView> views = new Dictionary<int, EntityView>();
         private readonly List<SpriteRenderer> highlights = new List<SpriteRenderer>();
-        private Transform terrainRoot, entityRoot, highlightRoot;
+        private Transform terrainRoot, entityRoot, highlightRoot, effectRoot;
         private static Sprite whiteSquare;
 
         public int Height => height;
@@ -51,6 +51,7 @@ namespace Sheepft.Game
             terrainRoot = NewChild("terrain");
             highlightRoot = NewChild("highlights");
             entityRoot = NewChild("entities");
+            effectRoot = NewChild("effects");
 
             height = board.Height;
             width = board.Width;
@@ -174,6 +175,39 @@ namespace Sheepft.Game
                     list[i].SetSortingOrder(order + i * 2);
                 }
             }
+        }
+
+        // ── 이펙트 ──
+
+        /// <summary>
+        /// 그 칸에 이펙트(태그 `play`)를 한 번 재생한다. 스프라이트가 없으면 아무것도 하지 않는다.
+        /// angle은 오른쪽을 보는 그림을 칸 가운데를 축으로 돌리는 각도다.
+        /// </summary>
+        public void SpawnEffect(string sheetName, Pos p, float angle = 0f)
+        {
+            var sheet = catalog.Get(sheetName);
+            if (sheet == null || effectRoot == null) return;
+
+            var pivot = new GameObject("effect " + sheetName);
+            pivot.transform.SetParent(effectRoot, false);
+            pivot.transform.position = TileCenter(p);
+            pivot.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+            var renderer = NewRenderer(pivot.transform, "sprite", RowOrderBase + p.Row * RowOrderStep + RowOrderStep - 1);
+            renderer.transform.localPosition = new Vector3(0f, -0.5f, 0f);
+            var animator = renderer.gameObject.AddComponent<SpriteAnimator>();
+            animator.Play(sheet, "play", false);
+            pivot.AddComponent<OneShotEffect>().Animator = animator;
+        }
+
+        public bool InGrid(Pos p)
+        {
+            return p.Row >= 0 && p.Row < height && p.Col >= 0 && p.Col < width && kinds[p.Row, p.Col] == TileKind.Normal;
+        }
+
+        /// <summary>화면에 지금 그려진 지형이 풀인가.</summary>
+        public bool ShowsGrass(Pos p)
+        {
+            return InGrid(p) && shownTerrain[p.Row, p.Col] == TerrainType.Grass;
         }
 
         // ── 줄 표시 ──

@@ -24,6 +24,18 @@ namespace Sheepft.Core
         public int TurnsUsed;
         public GameResult Result;
 
+        /// <summary>
+        /// 이번 턴의 2단계 승리 판정이 끝났는가. 턴을 시작할 때 꺼진다.
+        /// 그 뒤(기절·식사 해제 뒤의 정리)에 걸린 기절·식사는 이번 턴의 감소를 이미 지났다.
+        /// </summary>
+        public bool TurnEnding;
+
+        /// <summary>
+        /// 지금 새로 걸리는 기절·식사의 남은 기간. 턴 끝마다 1씩 줄고 0이 되면 풀린다.
+        /// "걸린 턴의 남은 시간과 다음 턴 끝까지"이므로 보통 2, 이번 턴의 감소가 지난 뒤면 1이다. README 4절.
+        /// </summary>
+        public int NewStatusDuration => TurnEnding ? 1 : 2;
+
         /// <summary>이번 턴에 일어난 일. 화면 재생용이다. 턴을 시작할 때 비운다.</summary>
         public readonly List<GameEvent> Events = new List<GameEvent>();
 
@@ -123,6 +135,14 @@ namespace Sheepft.Core
             }
         }
 
+        /// <summary>그 Id의 오브젝트. 없거나 사라졌으면 null.</summary>
+        public ObjectEntity Find(int id)
+        {
+            foreach (var o in Objects)
+                if (o.Id == id) return o;
+            return null;
+        }
+
         // ── 상태 바꾸기. 바뀐 것은 Events에 남긴다 ──
 
         /// <summary>오브젝트를 다른 칸으로 옮긴다. 도착 칸의 목록은 Id 순서를 유지한다.</summary>
@@ -190,6 +210,53 @@ namespace Sheepft.Core
             return true;
         }
 
+        /// <summary>늑대 무리의 마리 수를 바꾼다. 바뀌었으면 true.</summary>
+        public bool SetCount(Wolf wolf, int count)
+        {
+            if (wolf.Count == count) return false;
+            wolf.Count = count;
+            Events.Add(new CountChangedEvent(wolf.Id, count));
+            return true;
+        }
+
+        /// <summary>기절의 남은 기간을 정한다. 0이면 해제다. 기절 여부가 바뀌었으면 true.</summary>
+        public bool SetStun(Wolf wolf, int left)
+        {
+            bool before = wolf.StunLeft > 0;
+            wolf.StunLeft = left;
+            if (before == left > 0) return false;
+            Events.Add(new StatusChangedEvent(wolf.Id, StatusKind.Stunned, left > 0));
+            return true;
+        }
+
+        /// <summary>식사의 남은 기간을 정한다. 0이면 해제다. 식사 여부가 바뀌었으면 true.</summary>
+        public bool SetMeal(Wolf wolf, int left)
+        {
+            bool before = wolf.MealLeft > 0;
+            wolf.MealLeft = left;
+            if (before == left > 0) return false;
+            Events.Add(new StatusChangedEvent(wolf.Id, StatusKind.Eating, left > 0));
+            return true;
+        }
+
+        /// <summary>말·소의 목표 바구니를 정한다. -1이면 목표 없음이다. 바뀌었으면 true.</summary>
+        public bool SetTarget(BasketSeeker animal, int targetId)
+        {
+            if (animal.TargetId == targetId) return false;
+            animal.TargetId = targetId;
+            Events.Add(new TargetChangedEvent(animal.Id, targetId));
+            return true;
+        }
+
+        /// <summary>말·소의 배부름을 정한다. 바뀌었으면 true.</summary>
+        public bool SetFull(BasketSeeker animal, bool full)
+        {
+            if (animal.Full == full) return false;
+            animal.Full = full;
+            Events.Add(new StatusChangedEvent(animal.Id, StatusKind.Full, full));
+            return true;
+        }
+
         // ── 승리와 패배. README 8절 ──
 
         /// <summary>남아 있는 양의 수.</summary>
@@ -254,6 +321,7 @@ namespace Sheepft.Core
             var board = new Board(copy, Rules);
             board.TurnsUsed = TurnsUsed;
             board.Result = Result;
+            board.TurnEnding = TurnEnding;
             return board;
         }
     }

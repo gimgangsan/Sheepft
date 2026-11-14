@@ -122,4 +122,9 @@ Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.js
 - 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. Import 설정(Pixels Per Unit 32)을 맞추고, 스프라이트 목록을 담은 `Assets/Prefabs/GameRoot.prefab`과 `Assets/Scenes/Game.unity`를 다시 만든다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.
 - 프리팹의 스프라이트 목록은 손으로 고치지 않는다. 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
 
+## 테스트
+
+- 규칙은 단위 테스트(`Assets/Tests/EditMode`)로 확인한다. Unity MCP로는 컴파일과 EditMode 테스트 실행까지만 한다.
+- **인게임(Play 모드) 확인은 Claude가 하지 않는다.** 토큰을 많이 쓰기 때문이다. 눈으로 봐야 하는 것은 [PLAYTEST.md](PLAYTEST.md)에 항목으로 남기고, 사람이 Play해서 확인한다.
+
 MCP가 없는 세션에서는 Aseprite 배치 모드(`Aseprite.exe -b --script <lua>`)로 같은 작업을 할 수 있다.

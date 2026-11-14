@@ -14,6 +14,9 @@ namespace Sheepft.Game
 
         public string CurrentTag { get; private set; }
 
+        /// <summary>한 번만 재생하는 태그가 마지막 프레임까지 끝났는가.</summary>
+        public bool Finished { get; private set; }
+
         /// <summary>태그를 처음부터 재생한다. 태그가 없으면 0번 프레임만 보여 준다.</summary>
         public void Play(SpriteSheet newSheet, string tagName, bool looping = true)
         {
@@ -27,13 +30,14 @@ namespace Sheepft.Game
             from = tag == null ? 0 : tag.from;
             to = tag == null ? 0 : tag.to;
             frame = from;
+            Finished = false;
             target.sprite = sheet == null ? null : sheet.Frame(frame);
         }
 
         private void Update()
         {
-            if (sheet == null || to <= from) return;
-            if (!loop && frame >= to) return;
+            if (sheet == null || Finished) return;
+            if (loop && to <= from) return;
 
             elapsedMs += Time.deltaTime * 1000f;
             int duration = FrameDuration(frame);
@@ -43,7 +47,7 @@ namespace Sheepft.Game
                 elapsedMs -= duration;
                 if (frame < to) frame++;
                 else if (loop) frame = from;
-                else break;
+                else { Finished = true; break; }
                 duration = FrameDuration(frame);
                 changed = true;
             }

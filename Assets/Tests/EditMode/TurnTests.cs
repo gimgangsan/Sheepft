@@ -123,7 +123,7 @@ namespace Sheepft.Tests
         [Test]
         public void Lose_WhenSheepLeftAreFewerThanTarget()
         {
-            // 양을 없애는 것(늑대)은 아직 없으므로 Board.Remove로 직접 확인한다.
+            // 판정만 본다. 늑대가 먹는 경우는 WolfTests에 있다.
             var board = Level("shift: R0:R  제한 5턴  목표 양 2", ".S .S .S g");
             var sheep = board.Objects.ToArray();
             board.Remove(sheep[0], RemoveCause.Eaten);
@@ -152,7 +152,8 @@ namespace Sheepft.Tests
         [Test]
         public void Clone_IsIndependentDeepCopyWithSameIds()
         {
-            var board = TestLevel.Make(".S ~ .U ^\n.  . .W2 g");
+            // 늑대 무리는 화상을 입혀 둔다. 양을 잡지도 걷지도 않는다.
+            var board = TestLevel.Make(".S ~ .U ^\n.  . .W2(b) g");
             TestLevel.Play(board, "R0:R");
             var copy = board.Clone();
 
@@ -193,20 +194,11 @@ namespace Sheepft.Tests
         // ── 실제 스테이지 ──
 
         /// <summary>
-        /// stages.txt에서 지금까지 만든 규칙(shift, 물, 들불 상호작용, 양동이)만으로 풀리는 스테이지.
-        /// 들불이 있어도 주변 8칸에 나무 재질이 없어 확산이 일어나지 않는 것만 골랐다.
-        /// 풀이 줄의 마지막 수에서 정확히 클리어되는지 본다.
+        /// stages.txt의 30개 스테이지. solver가 찾은 최적해가 풀이 줄에 적혀 있다.
+        /// 풀이 줄의 마지막 수에서 정확히 클리어되는지 본다. solver와 게임 구현이 같은 결과를 내는지 확인하는 테스트이기도 하다.
         /// </summary>
-        [TestCase(1)]
-        [TestCase(2)]
-        [TestCase(3)]
-        [TestCase(4)]
-        [TestCase(5)]
-        [TestCase(6)]
-        [TestCase(7)]
-        [TestCase(10)]
-        [TestCase(11)]
-        public void Stage_SolutionLineClearsTheLevel(int stage)
+        [Test]
+        public void Stage_SolutionLineClearsTheLevel([Range(1, 30)] int stage)
         {
             var board = LevelParser.ParseAll(StagesFileTests.ReadStagesText())[stage - 1];
             var solution = board.Rules.Solution;

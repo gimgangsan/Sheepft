@@ -25,7 +25,13 @@ namespace Sheepft.Core
     {
         Wet,
         Burned,
-        Filled
+        Filled,
+        /// <summary>늑대의 기절(싸움).</summary>
+        Stunned,
+        /// <summary>늑대의 식사.</summary>
+        Eating,
+        /// <summary>말·소의 배부름.</summary>
+        Full
     }
 
     /// <summary>
@@ -104,8 +110,51 @@ namespace Sheepft.Core
         public override string ToString() => "Status #" + Id + " " + Status + (On ? " on" : " off");
     }
 
+    /// <summary>늑대 무리의 마리 수가 바뀌었다(합류).</summary>
+    public sealed class CountChangedEvent : GameEvent
+    {
+        public readonly int Id;
+        public readonly int Count;
+
+        public CountChangedEvent(int id, int count)
+        {
+            Id = id;
+            Count = count;
+        }
+
+        public override string ToString() => "Count #" + Id + " " + Count;
+    }
+
+    /// <summary>염소가 공격해 무언가를 밀쳐냈다. 화면이 공격 동작을 보여 주는 데 쓴다.</summary>
+    public sealed class AttackedEvent : GameEvent
+    {
+        public readonly int Id;
+
+        public AttackedEvent(int id)
+        {
+            Id = id;
+        }
+
+        public override string ToString() => "Attacked #" + Id;
+    }
+
+    /// <summary>말·소의 목표 바구니가 바뀌었다. 목표를 잃으면 TargetId가 -1이다.</summary>
+    public sealed class TargetChangedEvent : GameEvent
+    {
+        public readonly int Id;
+        public readonly int TargetId;
+
+        public TargetChangedEvent(int id, int targetId)
+        {
+            Id = id;
+            TargetId = targetId;
+        }
+
+        public override string ToString() => "Target #" + Id + " → " + (TargetId < 0 ? "없음" : "#" + TargetId);
+    }
+
     /// <summary>
-    /// 한 단계의 끝. shift, 정리 한 바퀴마다 나온다.
+    /// 한 단계의 끝. shift, 동물 한 마리의 행동, 들불 확산, 기절·식사 해제, 정리 한 바퀴마다 나온다.
     /// 화면이 여기서 잠깐 쉬어 연쇄 반응을 읽을 수 있게 한다.
     /// </summary>
     public sealed class StepEndEvent : GameEvent

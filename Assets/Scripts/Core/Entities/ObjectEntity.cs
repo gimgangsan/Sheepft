@@ -19,6 +19,11 @@ namespace Sheepft.Core
         /// <summary>나무 재질 물건이면 들불에 탄다.</summary>
         public virtual bool IsWooden => false;
 
+        /// <summary>
+        /// 지형 상호작용을 받지 않는가. 배부른 말·소가 그렇다. README 4절.
+        /// </summary>
+        public virtual bool IgnoresInteractions => false;
+
         /// <summary>undo용 복사. Id와 모든 값이 같다.</summary>
         public virtual ObjectEntity Clone()
         {
@@ -36,5 +41,25 @@ namespace Sheepft.Core
         public Dir? LastWalkDir;
 
         public override bool IsAnimal => true;
+
+        /// <summary>
+        /// 행동 불가. 따로 저장하지 않는 공통 판정이다. 해당하면 종료 후 반응을 하지 않는다. README 4절.
+        /// 화상과 탑승은 여기서, 기절·식사는 늑대가 더한다.
+        /// </summary>
+        public virtual bool IsIncapacitated(Board b) => Burned || IsRiding(b);
+
+        /// <summary>
+        /// 탑승. 발견 상태인 말과 같은 칸에 있는, 말이 아닌 동물이다. 위치로만 판단하고 저장하지 않는다.
+        /// </summary>
+        public bool IsRiding(Board b)
+        {
+            if (this is Horse) return false;
+            foreach (var o in b.At(Pos).Objects)
+            {
+                var horse = o as Horse;
+                if (horse != null && horse.IsCarrying) return true;
+            }
+            return false;
+        }
     }
 }

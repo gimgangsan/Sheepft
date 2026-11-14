@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Sheepft.Core
 {
     /// <summary>턴 진행. README 2절, 구현 계획 4절. "언제, 어떤 순서로"를 맡는다.</summary>
@@ -14,6 +16,7 @@ namespace Sheepft.Core
 
             board.Events.Clear();
             board.TurnsUsed++;
+            board.TurnEnding = false;
             foreach (var o in board.Objects) o.AppliedThisTurn.Clear();
 
             // 1단계: shift. 아무것도 움직이지 않아도 턴을 쓴다.
@@ -25,15 +28,67 @@ namespace Sheepft.Core
 
             // 2단계: 종료 후 반응. 염소 → 말 → 소 → 늑대 → 들불 확산.
             // 한 마리의 행동이 끝날 때마다 정리 절차를 돌린다.
-            // (늑대는 4단계, 들불 확산은 5단계, 염소·말·소는 6–8단계에서 넣는다.)
+            if (!RunPhase<Goat>(board)) return true;
+            if (!RunPhase<Horse>(board)) return true;
+            if (!RunPhase<Cow>(board)) return true;
+            if (!RunPhase<Wolf>(board)) return true;
+            if (FireSpread.Spread(board)) board.Events.Add(new StepEndEvent());
             Settler.Settle(board);
             if (board.Result == GameResult.Lost) return true;
             if (TryWin(board)) return true;
 
-            // 기절·식사 해제 (4단계에서 넣는다.)
+            // 기절과 식사는 2단계 승리 판정 뒤에 풀린다. 풀린 것이 있으면 정리 절차를 한 번 더 돌린다.
+            // 여럿이 풀려도 모두 한꺼번에 푼 뒤 한 번만 돈다 (구현 계획 10절).
+            board.TurnEnding = true;
+            if (ReleaseStunAndMeal(board))
+            {
+                board.Events.Add(new StepEndEvent());
+                Settler.Settle(board);
+                if (board.Result == GameResult.Lost) return true;
+            }
 
             if (board.TurnsUsed >= board.Rules.TurnLimit) board.Result = GameResult.Lost;
             return true;
+        }
+
+        /// <summary>
+        /// 한 종류의 종료 후 반응. 차례가 시작될 때의 위치 기준으로 (0,0)부터 행 우선(같은 칸이면 Id) 순서다.
+        /// 차례가 오기 전에 사라졌거나 행동 불가인 것은 건너뛴다. 한 마리가 끝날 때마다 정리 절차를 돌린다.
+        /// 패배하면 false.
+        /// </summary>
+        private static bool RunPhase<T>(Board board) where T : Animal
+        {
+            var actors = new List<T>();
+            foreach (var o in board.Objects)
+            {
+                var actor = o as T;
+                if (actor != null) actors.Add(actor);
+            }
+
+            foreach (var actor in actors)
+            {
+                if (actor.Removed || actor.IsIncapacitated(board)) continue;
+                int before = board.Events.Count;
+                actor.AfterShift(board);
+                if (board.Events.Count > before) board.Events.Add(new StepEndEvent());
+                Settler.Settle(board);
+                if (board.Result == GameResult.Lost) return false;
+            }
+            return true;
+        }
+
+        /// <summary>기절·식사의 남은 기간을 1씩 줄인다. 풀린 것이 있으면 true.</summary>
+        private static bool ReleaseStunAndMeal(Board board)
+        {
+            bool released = false;
+            foreach (var o in board.Objects)
+            {
+                var wolf = o as Wolf;
+                if (wolf == null) continue;
+                if (wolf.StunLeft > 0 && board.SetStun(wolf, wolf.StunLeft - 1)) released = true;
+                if (wolf.MealLeft > 0 && board.SetMeal(wolf, wolf.MealLeft - 1)) released = true;
+            }
+            return released;
         }
 
         private static bool IsAllowed(Board board, ShiftPoint move)

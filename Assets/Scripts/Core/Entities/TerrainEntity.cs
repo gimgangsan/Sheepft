@@ -52,7 +52,7 @@ namespace Sheepft.Core
                     var bucket = o as Bucket;
                     bool filled = bucket != null && bucket.Filled;
                     if (filled != (pass == 0)) continue;
-                    if (o.Removed || o.AppliedThisTurn.Contains(Type)) continue;
+                    if (o.Removed || o.IgnoresInteractions || o.AppliedThisTurn.Contains(Type)) continue;
                     if (t.Terrain != this) return changed;
 
                     o.AppliedThisTurn.Add(Type);

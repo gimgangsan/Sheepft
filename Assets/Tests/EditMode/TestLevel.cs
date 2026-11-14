@@ -14,9 +14,9 @@ namespace Sheepft.Tests
     {
         /// <summary>
         /// 헤더 없는 맵을 읽는다. 실제 칸이 있는 모든 줄을 양방향으로 열고,
-        /// 제한은 99턴, 목표는 레벨의 모든 양이다.
+        /// 제한은 99턴, 목표는 레벨의 모든 양이다. target을 주면 그 수가 목표다(0이면 승리·패배 판정 없음).
         /// </summary>
-        public static Board Make(string grid)
+        public static Board Make(string grid, int target = -1)
         {
             var rows = new List<string[]>();
             foreach (var raw in grid.Replace("\r", "").Split('\n'))
@@ -36,7 +36,8 @@ namespace Sheepft.Tests
                 if (real) points.Add("C" + c + ":UD");
             }
 
-            return LevelParser.Parse("# test  shift: " + string.Join(", ", points) + "  제한 99턴\n" + grid);
+            return LevelParser.Parse("# test  shift: " + string.Join(", ", points) + "  제한 99턴"
+                + (target < 0 ? "" : "  목표 양 " + target) + "\n" + grid);
         }
 
         private static bool IsReal(string cell)
@@ -56,9 +57,9 @@ namespace Sheepft.Tests
         }
 
         /// <summary>맵에 수를 둔 뒤의 모습이 기대와 같은지 본다. 칸 사이 공백 수는 따지지 않는다.</summary>
-        public static Board AssertAfter(string level, string moves, string expected)
+        public static Board AssertAfter(string level, string moves, string expected, int target = -1)
         {
-            var board = Make(level);
+            var board = Make(level, target);
             Play(board, moves);
             AssertMap(expected, board);
             return board;

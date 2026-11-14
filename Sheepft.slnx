@@ -1,5 +1,5 @@
 ﻿<Solution>
-  <Project Path="Sheepft.Game.csproj" />
   <Project Path="Sheepft.Tests.csproj" />
+  <Project Path="Sheepft.Game.csproj" />
   <Project Path="Sheepft.Core.csproj" />
 </Solution>

@@ -30,19 +30,28 @@ namespace Sheepft.Core
                 bool changed = false;
 
                 // 1. 겹침 상호작용. 같은 칸에서는 지형이 먼저, 그다음 오브젝트끼리.
-                foreach (var tile in board.Tiles)
+                // 한 칸의 일이 다른 칸에 영향을 줄 수 있으므로(소가 먹은 바구니가 다른 말의 목표인 경우 등)
+                // 바뀌는 것이 없을 때까지 훑은 뒤 자동 반응으로 넘어간다.
+                for (int pass = 0; ; pass++)
                 {
-                    if (tile.IsBlank) continue;
-                    if (tile.Terrain.OnOverlap(board, tile)) changed = true;
-                    if (board.Result == GameResult.Lost) return;
-
-                    if (tile.Objects.Count == 0) continue;
-                    foreach (var o in tile.Objects.ToArray())
+                    if (pass >= MaxRounds) throw new InvalidOperationException("겹침 상호작용이 끝나지 않았다.");
+                    bool passChanged = false;
+                    foreach (var tile in board.Tiles)
                     {
-                        if (o.Removed) continue;
-                        if (o.OnOverlap(board, tile)) changed = true;
+                        if (tile.IsBlank) continue;
+                        if (tile.Terrain.OnOverlap(board, tile)) passChanged = true;
                         if (board.Result == GameResult.Lost) return;
+
+                        if (tile.Objects.Count == 0) continue;
+                        foreach (var o in tile.Objects.ToArray())
+                        {
+                            if (o.Removed) continue;
+                            if (o.OnOverlap(board, tile)) passChanged = true;
+                            if (board.Result == GameResult.Lost) return;
+                        }
                     }
+                    if (!passChanged) break;
+                    changed = true;
                 }
 
                 // 2. 자동 반응. 종류 순서로 한 바퀴. 같은 종류는 그 차례가 시작될 때의 위치 기준 행 우선.
