@@ -107,4 +107,19 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
    - 데스크톱 앱만 쓰면 `claude`가 PATH에 없다. 앱에 들어 있는 CLI를 쓴다: `%LOCALAPPDATA%\Claude-Data\claude_*\claude-code\<버전>\<id>\claude.exe`
 5. 새 세션을 열면 Aseprite 도구가 연결된다.
 
+### Unity MCP 설치 (기기마다 한 번)
+
+Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.json`에 들어 있어 git으로 따라온다. 서버만 기기마다 설치한다.
+
+1. 서버 설치: `python -m venv C:/tools/unity-mcp` 다음 `C:/tools/unity-mcp/Scripts/python.exe -m pip install mcpforunityserver==10.3.0`
+2. Claude Code에 등록: `claude mcp add unity -s user -e DISABLE_TELEMETRY=true -e UNITY_MCP_DISABLE_TELEMETRY=true -- C:/tools/unity-mcp/Scripts/mcp-for-unity.exe --transport stdio`
+3. Unity 에디터에서 프로젝트를 열고 Window > MCP for Unity에서 연결 상태를 확인한다. 새 세션을 열면 Unity 도구가 연결된다.
+
+- 에디터가 프로젝트를 열고 있는 동안에는 Unity 배치 모드(`-batchmode -runTests`)를 쓸 수 없다. 그때는 MCP로 테스트를 돌린다.
+
+## 게임 씬 설정
+
+- 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. Import 설정(Pixels Per Unit 32)을 맞추고, 스프라이트 목록을 담은 `Assets/Prefabs/GameRoot.prefab`과 `Assets/Scenes/Game.unity`를 다시 만든다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.
+- 프리팹의 스프라이트 목록은 손으로 고치지 않는다. 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
+
 MCP가 없는 세션에서는 Aseprite 배치 모드(`Aseprite.exe -b --script <lua>`)로 같은 작업을 할 수 있다.

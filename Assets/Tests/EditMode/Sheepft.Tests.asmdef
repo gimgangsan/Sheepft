@@ -3,6 +3,7 @@
     "rootNamespace": "Sheepft.Tests",
     "references": [
         "Sheepft.Core",
+        "Sheepft.Game",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

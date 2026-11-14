@@ -2,7 +2,8 @@
     "name": "Sheepft.Game",
     "rootNamespace": "Sheepft.Game",
     "references": [
-        "Sheepft.Core"
+        "Sheepft.Core",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
