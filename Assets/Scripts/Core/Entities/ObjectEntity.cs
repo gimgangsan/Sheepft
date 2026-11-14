@@ -12,12 +12,20 @@ namespace Sheepft.Core
         public bool Removed;
 
         /// <summary>이번 턴에 이미 적용받은 지형 종류. 지형 상호작용은 턴당 1회다. README 2절.</summary>
-        public readonly HashSet<TerrainType> AppliedThisTurn = new HashSet<TerrainType>();
+        public HashSet<TerrainType> AppliedThisTurn = new HashSet<TerrainType>();
 
         public virtual bool IsAnimal => false;
 
         /// <summary>나무 재질 물건이면 들불에 탄다.</summary>
         public virtual bool IsWooden => false;
+
+        /// <summary>undo용 복사. Id와 모든 값이 같다.</summary>
+        public virtual ObjectEntity Clone()
+        {
+            var copy = (ObjectEntity)MemberwiseClone();
+            copy.AppliedThisTurn = new HashSet<TerrainType>(AppliedThisTurn);
+            return copy;
+        }
     }
 
     public abstract class Animal : ObjectEntity

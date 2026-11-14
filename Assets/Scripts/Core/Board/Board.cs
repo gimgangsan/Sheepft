@@ -3,7 +3,14 @@ using System.Collections.Generic;
 
 namespace Sheepft.Core
 {
-    /// <summary>맵. 칸의 2차원 배열과 레벨 규칙을 담는다.</summary>
+    public enum GameResult
+    {
+        InProgress,
+        Won,
+        Lost
+    }
+
+    /// <summary>맵. 칸의 2차원 배열과 레벨 규칙, 진행 상태를 담는다.</summary>
     public sealed class Board
     {
         // null 없음. 빈칸도 Tile이다.
@@ -15,6 +22,10 @@ namespace Sheepft.Core
         public readonly int Width;
         public LevelRules Rules;
         public int TurnsUsed;
+        public GameResult Result;
+
+        /// <summary>이번 턴에 일어난 일. 화면 재생용이다. 턴을 시작할 때 비운다.</summary>
+        public readonly List<GameEvent> Events = new List<GameEvent>();
 
         public Board(Tile[,] tiles, LevelRules rules)
         {
@@ -42,6 +53,8 @@ namespace Sheepft.Core
             }
         }
 
+        // ── 칸 찾기와 판정 ──
+
         /// <summary>격자 바깥이면 null.</summary>
         public Tile At(Pos p)
         {
@@ -67,6 +80,14 @@ namespace Sheepft.Core
         {
             var t = At(p);
             return t == null || t.IsBlank || t.Terrain.IsObstacle;
+        }
+
+        /// <summary>걷기용 판정: 동물을 막지 않고 물·들불이 아닌 칸. README 6절.</summary>
+        public bool IsWalkable(Pos p)
+        {
+            if (BlocksAnimal(p)) return false;
+            var type = At(p).Terrain.Type;
+            return type != TerrainType.Water && type != TerrainType.Fire;
         }
 
         /// <summary>
@@ -100,6 +121,140 @@ namespace Sheepft.Core
                     foreach (var o in t.Objects)
                         yield return o;
             }
+        }
+
+        // ── 상태 바꾸기. 바뀐 것은 Events에 남긴다 ──
+
+        /// <summary>오브젝트를 다른 칸으로 옮긴다. 도착 칸의 목록은 Id 순서를 유지한다.</summary>
+        public void Move(ObjectEntity o, Pos to, MoveCause cause)
+        {
+            var dest = At(to);
+            if (dest == null || dest.IsBlank) throw new ArgumentException("칸이 없는 자리로는 옮길 수 없다: " + to, nameof(to));
+            if (o.Pos == to) return;
+
+            var from = o.Pos;
+            At(from).Objects.Remove(o);
+            int i = 0;
+            while (i < dest.Objects.Count && dest.Objects[i].Id < o.Id) i++;
+            dest.Objects.Insert(i, o);
+            o.Pos = to;
+            Events.Add(new MovedEvent(o.Id, from, to, cause));
+        }
+
+        /// <summary>오브젝트를 없앤다. 양이 줄어 목표 수보다 적어지면 그 순간 패배다. README 8절.</summary>
+        public void Remove(ObjectEntity o, RemoveCause cause)
+        {
+            if (o.Removed) return;
+            o.Removed = true;
+            At(o.Pos).Objects.Remove(o);
+            Events.Add(new RemovedEvent(o.Id, cause));
+            if (o is Sheep && Result == GameResult.InProgress && SheepCount() < Rules.TargetSheep)
+                Result = GameResult.Lost;
+        }
+
+        /// <summary>지형을 바꾼다. 인스턴스를 새로 만들어 교체한다.</summary>
+        public void SetTerrain(Pos p, TerrainType type)
+        {
+            var t = At(p);
+            if (t == null || t.IsBlank) throw new ArgumentException("칸이 없는 자리다: " + p, nameof(p));
+            var before = t.Terrain.Type;
+            if (before == type) return;
+            t.Terrain = TerrainEntity.Create(type);
+            Events.Add(new TerrainChangedEvent(p, before, type));
+        }
+
+        /// <summary>바뀌었으면 true.</summary>
+        public bool SetWet(ObjectEntity o, bool wet)
+        {
+            if (o.Wet == wet) return false;
+            o.Wet = wet;
+            Events.Add(new StatusChangedEvent(o.Id, StatusKind.Wet, wet));
+            return true;
+        }
+
+        /// <summary>바뀌었으면 true.</summary>
+        public bool SetBurned(Animal a, bool burned)
+        {
+            if (a.Burned == burned) return false;
+            a.Burned = burned;
+            Events.Add(new StatusChangedEvent(a.Id, StatusKind.Burned, burned));
+            return true;
+        }
+
+        /// <summary>바뀌었으면 true.</summary>
+        public bool SetFilled(Bucket bucket, bool filled)
+        {
+            if (bucket.Filled == filled) return false;
+            bucket.Filled = filled;
+            Events.Add(new StatusChangedEvent(bucket.Id, StatusKind.Filled, filled));
+            return true;
+        }
+
+        // ── 승리와 패배. README 8절 ──
+
+        /// <summary>남아 있는 양의 수.</summary>
+        public int SheepCount()
+        {
+            int n = 0;
+            foreach (var o in Objects)
+                if (o is Sheep) n++;
+            return n;
+        }
+
+        /// <summary>풀 칸 위에 있고 젖지도 화상을 입지도 않은 양의 수.</summary>
+        public int SheepOnGrass()
+        {
+            int n = 0;
+            foreach (var t in Tiles)
+            {
+                if (t.IsBlank || t.Terrain.Type != TerrainType.Grass) continue;
+                foreach (var o in t.Objects)
+                {
+                    var sheep = o as Sheep;
+                    if (sheep != null && !sheep.Wet && !sheep.Burned) n++;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>승리 조건이 지금 성립하는가. 목표 양 수가 0인 레벨은 승리 판정을 하지 않는다.</summary>
+        public bool IsWinConditionMet()
+        {
+            return Rules.TargetSheep > 0 && SheepOnGrass() >= Rules.TargetSheep;
+        }
+
+        /// <summary>풀이 하나도 남지 않았다. 패배는 아니지만 승리 조건이 사라진 상태다.</summary>
+        public bool CannotWin
+        {
+            get
+            {
+                foreach (var t in Tiles)
+                    if (!t.IsBlank && t.Terrain.Type == TerrainType.Grass) return false;
+                return true;
+            }
+        }
+
+        // ── undo ──
+
+        /// <summary>undo용 깊은 복사. 오브젝트의 Id는 그대로다. Events는 복사하지 않는다.</summary>
+        public Board Clone()
+        {
+            var copy = new Tile[Height, Width];
+            for (int r = 0; r < Height; r++)
+            {
+                for (int c = 0; c < Width; c++)
+                {
+                    var src = tiles[r, c];
+                    var terrain = src.IsBlank ? null : TerrainEntity.Create(src.Terrain.Type);
+                    var tile = new Tile(src.Pos, src.Kind, terrain);
+                    foreach (var o in src.Objects) tile.Objects.Add(o.Clone());
+                    copy[r, c] = tile;
+                }
+            }
+            var board = new Board(copy, Rules);
+            board.TurnsUsed = TurnsUsed;
+            board.Result = Result;
+            return board;
         }
     }
 }

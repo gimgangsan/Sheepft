@@ -12,7 +12,7 @@ namespace Sheepft.Tests
     {
         private const int StageCount = 30;
 
-        private static string ReadStagesText()
+        internal static string ReadStagesText()
         {
             return File.ReadAllText(Path.Combine(Application.dataPath, "Levels", "stages.txt"));
         }
