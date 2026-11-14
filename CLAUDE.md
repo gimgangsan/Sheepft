@@ -9,6 +9,8 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 - 게임 규칙의 기준 문서는 [README.md](README.md)다. 게임 로직을 만들거나 고칠 때는 README를 먼저 읽고, 다르면 README를 따른다.
 - 코드 구조와 작업 순서는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)를 따른다.
 - 엔진: Unity 6000.5.0f1, URP, Input System
+- **인게임 텍스트는 모두 영어로 쓴다** (스테이지 이름·설명, 버튼, 승패 문구). 문서와 코드 주석은 한국어다.
+- UI 기준 해상도는 640×360이다.
 - 2D 도트 그래픽. 스프라이트는 Aseprite로 만든다. 만들 스프라이트 목록과 파일별 사양은 [SPRITES.md](SPRITES.md)에 있다.
 
 ## 폴더 구조
@@ -29,6 +31,9 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Levels/` | 레벨 데이터 `stages.txt` (README 10절 표기법), 스테이지 설계 문서 `StageDesign.md` |
 | `Assets/Levels/Solver~/` | 시뮬레이터, solver, 단위 테스트 (C#, .NET SDK 필요). 사용법은 그 폴더의 `README.md` |
 | `Assets/Settings/` | URP 등 렌더링 설정. 요청이 없으면 건드리지 않는다 |
+| `Assets/Fonts/` | 폰트. 인게임 글자와 숫자는 모두 Agrave Pro(`AgravePro-Regular.ttf`, `AgravePro-Bold.ttf`, SIL OFL)를 쓴다. 라이선스 `AgravePro-OFL.txt`를 함께 둔다 |
+| `Assets/Data/` | 조정값 ScriptableObject (이동 시간, 간격 등) |
+| `Assets/TextMesh Pro/` | TMP 필수 리소스. Unity가 만든다. 직접 고치지 않는다 |
 
 - 게임에 들어가지 않는 파일(미리보기 이미지, 임시 스크립트, 테스트 출력)은 `Assets/` 안에 두지 않는다. `Assets/` 안의 파일은 Unity가 모두 불러온다.
   - 예외: 이름이 `~`로 끝나는 폴더는 Unity가 불러오지 않는다. `Solver~`가 그렇다. 이 폴더에는 `.meta`가 생기지 않는다.
@@ -119,8 +124,10 @@ Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.js
 
 ## 게임 씬 설정
 
-- 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. Import 설정(Pixels Per Unit 32)을 맞추고, 스프라이트 목록을 담은 `Assets/Prefabs/GameRoot.prefab`과 `Assets/Scenes/Game.unity`를 다시 만든다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.
-- 프리팹의 스프라이트 목록은 손으로 고치지 않는다. 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
+- 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.
+- 이 메뉴는 손으로 고친 것을 덮어쓰지 않는다. Import 설정(Pixels Per Unit 32)을 맞추고, `Assets/Prefabs/GameRoot.prefab`의 **스프라이트 목록만** 다시 채운다. `Assets/Scenes/Game.unity`와 `Assets/Data/GameSettings.asset`은 없을 때만 만든다.
+- 프리팹의 스프라이트 목록은 손으로 고치지 않는다. 그 밖의 프리팹 내용, 씬, 조정값(`GameSettings.asset`: 이동 시간, 간격, 색)은 에디터에서 직접 고친다.
+- 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
 
 ## 테스트
 

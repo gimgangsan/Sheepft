@@ -11,8 +11,10 @@ namespace Sheepft.Game
 {
     /// <summary>
     /// 에디터 전용. 메뉴 Sheepft > Setup Game Scene.
-    /// Assets/Sprites의 .aseprite를 읽어 Import 설정을 맞추고, 스프라이트 목록을 담은
-    /// GameRoot 프리팹과 Game 씬을 만든다. 스프라이트를 추가하거나 태그를 바꾸면 다시 돌린다.
+    /// Assets/Sprites의 .aseprite를 읽어 Import 설정을 맞추고, GameRoot 프리팹의 스프라이트 목록을 채운다.
+    /// 스프라이트를 추가하거나 태그를 바꾸면 다시 돌린다.
+    /// 손으로 고친 것은 덮어쓰지 않는다: 프리팹은 스프라이트 목록과 레벨 파일 참조만 갱신하고,
+    /// Game 씬과 GameSettings 에셋은 없을 때만 만든다.
     /// 빌드에는 들어가지 않는다.
     /// </summary>
     public static class GameSceneSetup
@@ -23,6 +25,8 @@ namespace Sheepft.Game
         private const string PrefabPath = "Assets/Prefabs/GameRoot.prefab";
         private const string ScenePath = "Assets/Scenes/Game.unity";
         private const string TemplateScenePath = "Assets/Scenes/SampleScene.unity";
+        private const string DataFolder = "Assets/Data";
+        private const string SettingsPath = "Assets/Data/GameSettings.asset";
         private const float PixelsPerUnit = 32f;
 
         [MenuItem("Sheepft/Setup Game Scene")]
@@ -91,21 +95,43 @@ namespace Sheepft.Game
         private static GameObject BuildPrefab(List<string> paths)
         {
             if (!AssetDatabase.IsValidFolder(PrefabFolder)) AssetDatabase.CreateFolder("Assets", "Prefabs");
+            var settings = FindOrCreateSettings();
 
-            var root = new GameObject("GameRoot");
+            // 프리팹이 이미 있으면 그 내용을 열어 필요한 값만 갱신한다. 손으로 붙인 컴포넌트와 값은 그대로 남는다.
+            bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
+            var root = exists ? PrefabUtility.LoadPrefabContents(PrefabPath) : new GameObject("GameRoot");
             try
             {
-                var catalog = root.AddComponent<SpriteCatalog>();
-                root.AddComponent<GameController>();
-                catalog.stages = AssetDatabase.LoadAssetAtPath<TextAsset>(StagesPath);
+                var catalog = root.GetComponent<SpriteCatalog>();
+                if (catalog == null) catalog = root.AddComponent<SpriteCatalog>();
+                if (root.GetComponent<GameController>() == null) root.AddComponent<GameController>();
+
+                if (catalog.stages == null) catalog.stages = AssetDatabase.LoadAssetAtPath<TextAsset>(StagesPath);
                 if (catalog.stages == null) Debug.LogError("[Sheepft] 레벨 파일이 없다: " + StagesPath);
+                if (catalog.settings == null) catalog.settings = settings;
+
+                // 스프라이트 목록만은 매번 .aseprite에서 다시 읽는다. 손으로 고치지 않는다.
+                catalog.sheets.Clear();
                 foreach (var path in paths) catalog.sheets.Add(ReadSheet(path));
                 return PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(root);
+                if (exists) PrefabUtility.UnloadPrefabContents(root);
+                else UnityEngine.Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>조정값 에셋. 있으면 그대로 쓰고, 없을 때만 기본값으로 만든다.</summary>
+        private static GameSettings FindOrCreateSettings()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<GameSettings>(SettingsPath);
+            if (settings != null) return settings;
+
+            if (!AssetDatabase.IsValidFolder(DataFolder)) AssetDatabase.CreateFolder("Assets", "Data");
+            settings = ScriptableObject.CreateInstance<GameSettings>();
+            AssetDatabase.CreateAsset(settings, SettingsPath);
+            return settings;
         }
 
         private static SpriteSheet ReadSheet(string path)
@@ -194,16 +220,14 @@ namespace Sheepft.Game
 
         private static void BuildScene(GameObject prefab)
         {
+            // 씬이 이미 있으면 건드리지 않는다. 씬의 GameRoot는 프리팹 인스턴스라서 프리팹이 바뀌면 따라온다.
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) != null) return;
+
             // 카메라와 Global Light 2D가 들어 있는 기본 씬을 복사해서 시작한다.
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null)
-            {
-                if (!AssetDatabase.CopyAsset(TemplateScenePath, ScenePath))
-                    throw new InvalidOperationException(TemplateScenePath + "를 복사하지 못했다.");
-            }
+            if (!AssetDatabase.CopyAsset(TemplateScenePath, ScenePath))
+                throw new InvalidOperationException(TemplateScenePath + "를 복사하지 못했다.");
 
             var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            foreach (var go in scene.GetRootGameObjects())
-                if (go.name == prefab.name) UnityEngine.Object.DestroyImmediate(go);
             PrefabUtility.InstantiatePrefab(prefab, scene);
             EditorSceneManager.SaveScene(scene);
 

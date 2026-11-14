@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c553e7a116573c44e97f5b0306ce9d37, type: 3}
+  m_Name: GameSettings
+  m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.GameSettings
+  moveSeconds: 0.18
+  stepPauseSeconds: 0.1
+  moveCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  stackSpacingPixels: 6
+  packOffsetPixels: {x: -4, y: 3}
+  statusIconHeightPixels: 26
+  cameraMargin: 0.25
+  backgroundColor: {r: 0.16862746, g: 0.14117648, b: 0.2, a: 1}
+  holeColor: {r: 0.101960786, g: 0.08235294, b: 0.1254902, a: 1}

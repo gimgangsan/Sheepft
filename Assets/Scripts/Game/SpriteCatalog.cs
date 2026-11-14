@@ -54,6 +54,21 @@ namespace Sheepft.Game
     public sealed class SpriteCatalog : MonoBehaviour
     {
         public TextAsset stages;
+
+        /// <summary>화면 연출의 조정값. 비어 있으면 기본값을 쓴다.</summary>
+        public GameSettings settings;
+
+        private GameSettings fallbackSettings;
+
+        public GameSettings Settings
+        {
+            get
+            {
+                if (settings != null) return settings;
+                if (fallbackSettings == null) fallbackSettings = ScriptableObject.CreateInstance<GameSettings>();
+                return fallbackSettings;
+            }
+        }
         public List<SpriteSheet> sheets = new List<SpriteSheet>();
 
         private Dictionary<string, SpriteSheet> byName;

@@ -67,7 +67,7 @@ namespace Sheepft.Game
 
             var iconObject = new GameObject("status");
             iconObject.transform.SetParent(transform, false);
-            iconObject.transform.localPosition = new Vector3(0f, 26f * Pixel, 0f);
+            iconObject.transform.localPosition = new Vector3(0f, catalog.Settings.statusIconHeightPixels * Pixel, 0f);
             icon = iconObject.AddComponent<SpriteRenderer>();
             iconAnimator = iconObject.AddComponent<SpriteAnimator>();
 
@@ -177,7 +177,7 @@ namespace Sheepft.Game
                 var copy = new GameObject("pack");
                 copy.transform.SetParent(transform, false);
                 int n = packCopies.Count + 1;
-                copy.transform.localPosition = new Vector3(-4f * Pixel * n, 3f * Pixel * n, 0f);
+                copy.transform.localPosition = (Vector3)(catalog.Settings.packOffsetPixels * (Pixel * n));
                 packCopies.Add(copy.AddComponent<SpriteRenderer>());
             }
             for (int i = 0; i < packCopies.Count; i++) packCopies[i].enabled = i < Count - 1;

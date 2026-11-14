@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.SpriteCatalog
   stages: {fileID: 4900000, guid: 2344984d26f680840afda85d998756e9, type: 3}
+  settings: {fileID: 11400000, guid: 0d8b64b699c48d64cae9a77366df2358, type: 2}
   sheets:
   - name: cow
     frames:

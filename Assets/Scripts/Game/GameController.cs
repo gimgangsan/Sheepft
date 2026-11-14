@@ -13,16 +13,13 @@ namespace Sheepft.Game
     [RequireComponent(typeof(SpriteCatalog))]
     public sealed class GameController : MonoBehaviour
     {
-        private const float MoveSeconds = 0.18f;
-        private const float StepPauseSeconds = 0.10f;
         private const int UiOrder = 1000;
-
-        private static readonly Color Background = new Color32(0x2b, 0x24, 0x33, 0xff);
 
         /// <summary>처음 열 스테이지. 0부터 센다.</summary>
         public int startStage;
 
         private SpriteCatalog catalog;
+        private GameSettings Settings => catalog.Settings;
         private Camera cam;
         private BoardView boardView;
         private Hud hud;
@@ -61,7 +58,7 @@ namespace Sheepft.Game
             if (cam != null)
             {
                 cam.orthographic = true;
-                cam.backgroundColor = Background;
+                cam.backgroundColor = Settings.backgroundColor;
                 cam.clearFlags = CameraClearFlags.SolidColor;
             }
 
@@ -158,7 +155,7 @@ namespace Sheepft.Game
         private void FitCamera(float left, float right, float bottom, float top)
         {
             if (cam == null) return;
-            const float margin = 0.25f;
+            float margin = Settings.cameraMargin;
             float halfHeight = (top - bottom) * 0.5f + margin;
             float halfWidth = (right - left) * 0.5f + margin;
             aspect = cam.aspect;
@@ -369,9 +366,10 @@ namespace Sheepft.Game
                     if (m.Cause == MoveCause.Walk) boardView.View(m.Id).PlayAction(walkTag, false);
                 }
 
-                for (float t = 0f; t < MoveSeconds; t += Time.deltaTime)
+                float moveSeconds = Settings.moveSeconds;
+                for (float t = 0f; t < moveSeconds; t += Time.deltaTime)
                 {
-                    float k = Mathf.SmoothStep(0f, 1f, t / MoveSeconds);
+                    float k = Mathf.Clamp01(Settings.moveCurve.Evaluate(t / moveSeconds));
                     foreach (var m in moves) PlaceMoving(m, move, k);
                     yield return null;
                 }
@@ -439,7 +437,7 @@ namespace Sheepft.Game
             if (other)
             {
                 boardView.Layout();
-                yield return new WaitForSeconds(StepPauseSeconds);
+                yield return new WaitForSeconds(Settings.stepPauseSeconds);
             }
         }
 

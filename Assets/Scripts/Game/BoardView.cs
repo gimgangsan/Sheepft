@@ -19,7 +19,6 @@ namespace Sheepft.Game
         private const int RowOrderStep = 20;
         private const float Pixel = 1f / 32f;
 
-        private static readonly Color HoleColor = new Color32(0x1a, 0x15, 0x20, 0xff);
 
         private SpriteCatalog catalog;
         private int height, width;
@@ -72,7 +71,7 @@ namespace Sheepft.Game
                     // 구멍 스프라이트가 아직 없어 단색 사각형으로 그린다 (구현 계획 10절).
                     var hole = NewRenderer(terrainRoot, "hole " + p, FloorOrder);
                     hole.sprite = WhiteSquare();
-                    hole.color = HoleColor;
+                    hole.color = catalog.Settings.holeColor;
                     hole.transform.position = TileCenter(p);
                     continue;
                 }
@@ -169,7 +168,7 @@ namespace Sheepft.Game
                 int order = RowOrderBase + pair.Key.Row * RowOrderStep + 8;
                 for (int i = 0; i < list.Count; i++)
                 {
-                    float dx = (i - (list.Count - 1) * 0.5f) * 6f * Pixel;
+                    float dx = (i - (list.Count - 1) * 0.5f) * catalog.Settings.stackSpacingPixels * Pixel;
                     list[i].LayoutOffset = new Vector3(dx, 0f, 0f);
                     list[i].Place(TileBase(pair.Key));
                     list[i].SetSortingOrder(order + i * 2);
