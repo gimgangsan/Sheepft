@@ -21,7 +21,7 @@ namespace Sheepft.Cli
       제한 턴은 최적 + S로 잡는다 (생략하면 헤더의 제한 - 별3 기준, 그것도 없으면 4). K는 뺄 포인트의 최대 개수.
 
   스테이지 번호는 파일 안의 순서이고 1부터 센다. 생략하면 solve는 전부, play는 1번.
-  수 표기: R1→ R1← C2↑ C2↓ 또는 R1> R1< C2^ C2v";
+  수 표기: R1:R R1:L C2:U C2:D (옛 표기 R1→ R1> C2↑ C2^ 도 읽는다)";
 
         private static int Main(string[] args)
         {
@@ -167,6 +167,11 @@ namespace Sheepft.Cli
                 }
                 if (Math.Max(0, lv.Rows - 7) + Math.Max(0, lv.Cols - 7) > 4) problems.Add("맵이 7×7보다 행·열 합쳐 4줄 넘게 큼");
                 if (r.OptimalTurns > 20) problems.Add("최적 20턴 초과");
+                if (lv.SolutionText != null)
+                {
+                    string why = SolutionProblem(lv);
+                    if (why != null) problems.Add("풀이 줄: " + why);
+                }
                 if (problems.Count > 0) bad++;
 
                 Console.WriteLine(
@@ -185,6 +190,20 @@ namespace Sheepft.Cli
             Console.WriteLine();
             Console.WriteLine(bad == 0 ? "모든 스테이지 통과 (" + levels.Count + "개)" : "확인이 필요한 스테이지 " + bad + "개");
             return bad == 0 ? 0 : 1;
+        }
+
+        /// <summary>"# 풀이:" 줄의 수순을 그대로 두어 승리하는지 본다. 문제가 없으면 null.</summary>
+        private static string SolutionProblem(Level lv)
+        {
+            var g = new Game(lv);
+            foreach (var token in lv.SolutionText.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                Move m;
+                if (!lv.TryParseMove(token, out m)) return "'" + token + "'는 둘 수 없는 수";
+                if (g.Outcome != Outcome.Ongoing) return "수순이 끝나기 전에 판이 끝남";
+                g.Do(m);
+            }
+            return g.Outcome == Outcome.Win ? null : "승리하지 못함";
         }
 
         private static string Num(int v)

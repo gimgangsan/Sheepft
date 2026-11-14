@@ -27,7 +27,7 @@ namespace Sheepft.Tests
             var lv = LevelParser.ParseOne(ReadmeExample);
             var r = Solver.Solve(lv);
             Assert.Equal(3, r.OptimalTurns);
-            Assert.Contains("R1→ R1→ C2↑", r.Solutions.Select(s => lv.MovesText(s.Moves)));
+            Assert.Contains("R1:R R1:R C2:U", r.Solutions.Select(s => lv.MovesText(s.Moves)));
             Assert.All(r.Solutions, s => Assert.True((s.Events & Ev.SheepMerge) != 0));
         }
 
@@ -38,7 +38,7 @@ namespace Sheepft.Tests
             var r = Solver.Solve(lv);
             Assert.Equal(2, r.OptimalTurns);
             Assert.Equal(1, (int)r.OptimalSequences);
-            Assert.Equal("R0→ C4↑", lv.MovesText(r.Solutions[0].Moves));
+            Assert.Equal("R0:R C4:U", lv.MovesText(r.Solutions[0].Moves));
             Assert.True((r.Solutions[0].Events & Ev.VoidSkip) != 0);
             Assert.True((r.Solutions[0].Events & Ev.SheepWrap) != 0);
         }
@@ -55,7 +55,7 @@ namespace Sheepft.Tests
             Assert.Equal(1, r.OptimalTurns);   // R0← 로 순환
             Assert.Equal(1, r.IntendedTurns);
             Assert.Equal(3, r.BypassTurns);    // R0→ 세 번이면 순환 없이도 깨진다
-            Assert.Equal("R0→ R0→ R0→", lv.MovesText(r.Bypass.Moves));
+            Assert.Equal("R0:R R0:R R0:R", lv.MovesText(r.Bypass.Moves));
             Assert.Equal(Ev.SheepWrap, r.BypassMissing);
         }
 
@@ -98,7 +98,7 @@ namespace Sheepft.Tests
                 """);
             var r = Solver.Solve(lv);
             Assert.Equal(2, r.OptimalTurns);
-            Assert.Equal("R1→ R1→", lv.MovesText(r.Solutions[0].Moves));
+            Assert.Equal("R1:R R1:R", lv.MovesText(r.Solutions[0].Moves));
             Assert.True((r.Solutions[0].Events & Ev.Wait) != 0);
             Assert.True((r.Solutions[0].Events & Ev.GoatPushSheep) != 0);
         }

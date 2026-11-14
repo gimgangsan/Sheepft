@@ -393,13 +393,13 @@ namespace Sheepft.Tests
         }
     }
 
-    /// <summary>README 2절 정리 절차: 겹침 상호작용 → 자동 반응(말 발견 → 말 먹기 → 소 냄새 → 늑대 양 잡기).</summary>
+    /// <summary>README 2절 정리 절차: 겹침 상호작용 → 자동 반응(늑대 양 잡기 → 말 먹기 → 말 발견 → 소 냄새).</summary>
     public class CleanupOrderTests
     {
         [Fact]
-        public void A_horse_eats_and_drops_its_sheep_before_the_pack_catches()
+        public void The_pack_catches_before_a_horse_eats_and_drops_its_sheep()
         {
-            // 말이 (1,1)에 들어서면 무리(2,2)의 범위 안이지만, 먼저 위쪽 바구니를 먹어 양을 (0,1)로 옮긴다.
+            // 말이 (1,1)에 들어서면 무리(2,2)의 범위 안이다. 늑대 잡기가 말 먹기보다 먼저라서 양이 먹힌다.
             var g = Kit.G("""
                 # t  shift: R3 : R  제한 9턴  목표 양 1
                 #    .A  .    .
@@ -407,11 +407,47 @@ namespace Sheepft.Tests
                 .    ~   .W2  ~
                 x    x   x    .
                 """);
-            Assert.Equal(Outcome.Ongoing, g.Do("R3>"));
-            Assert.Equal(".S", g.Cell(0, 1));
-            Assert.Equal(".H", g.Cell(1, 1));
-            Assert.True(g.Has(Ev.HorseEat));
-            Assert.False(g.Has(Ev.WolfEat));
+            Assert.Equal(Outcome.Lose, g.Do("R3>"));
+            Assert.True(g.Has(Ev.WolfEat));
+            Assert.False(g.Has(Ev.HorseEat));
+        }
+
+        [Fact]
+        public void A_merged_pack_is_wet_if_any_wolf_was_wet()
+        {
+            var g = Kit.G("""
+                # t  shift: R0:R  제한 9턴  목표 양 1
+                .W(w)  .W  #   .
+                .      .   .   .
+                .      .   .   .S
+                """);
+            g.Do("R0:R");
+            Assert.Equal(".W2(w)", g.Cell(0, 1));
+        }
+
+        [Fact]
+        public void A_wolf_eats_the_wet_sheep_of_a_mixed_stack_first()
+        {
+            var g = Kit.G("""
+                # t  shift: R0:R  제한 9턴  목표 양 1
+                .W  .SS(w)  #
+                """);
+            Assert.Equal(Outcome.Ongoing, g.Do("R0:R"));
+            Assert.True(g.Has(Ev.WolfEat));
+            Assert.DoesNotContain("(w)", g.Cell(0, 1));
+        }
+
+        [Fact]
+        public void Reads_outer_blanks_the_solution_line_and_colon_moves()
+        {
+            var g = Kit.G("""
+                # t  shift: R0:R  제한 3턴  목표 양 1
+                # 풀이: R0:R, R0:R
+                -  .S  x  .  g
+                """);
+            Assert.Equal("R0:R, R0:R", g.Level.SolutionText);
+            g.Do("R0:R");
+            Assert.Equal(Outcome.Win, g.Do("R0:R"));
         }
 
         [Fact]

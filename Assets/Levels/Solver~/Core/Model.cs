@@ -115,6 +115,10 @@ namespace Sheepft.Core
     {
         public string Title = "";
         public string Description = "";
+        /// <summary>헤더 다음의 "# 풀이:" 줄. 없으면 null.</summary>
+        public string SolutionText;
+        /// <summary>외곽 빈칸(-)으로 적힌 칸. 규칙은 중간 빈칸(x)과 같고 화면에서만 다르다.</summary>
+        public HashSet<int> OuterVoid = new HashSet<int>();
         public int Rows;
         public int Cols;
         /// <summary>처음 지형. 게임 중 지형은 GameState.T에 있다.</summary>
@@ -181,7 +185,7 @@ namespace Sheepft.Core
             {
                 if (!line.Forward && !line.Backward) continue;
                 if (sb.Length > 0) sb.Append(", ");
-                sb.Append(line.IsRow ? "R" : "C").Append(line.Index).Append(" : ");
+                sb.Append(line.IsRow ? "R" : "C").Append(line.Index).Append(":");
                 if (line.IsRow) sb.Append(line.Forward ? "R" : "").Append(line.Backward ? "L" : "");
                 else sb.Append(line.Backward ? "U" : "").Append(line.Forward ? "D" : "");
             }
@@ -219,12 +223,12 @@ namespace Sheepft.Core
             }
         }
 
-        /// <summary>README 10절 표기. 예: R2→, C1↑</summary>
+        /// <summary>README 10절 표기. 예: R2:R, C1:U</summary>
         public string MoveText(Move m)
         {
             var line = Lines[m.Line];
-            if (line.IsRow) return "R" + line.Index + (m.Forward ? "→" : "←");
-            return "C" + line.Index + (m.Forward ? "↓" : "↑");
+            if (line.IsRow) return "R" + line.Index + (m.Forward ? ":R" : ":L");
+            return "C" + line.Index + (m.Forward ? ":D" : ":U");
         }
 
         public string MovesText(IEnumerable<Move> moves)
@@ -243,6 +247,14 @@ namespace Sheepft.Core
         {
             move = default(Move);
             if (string.IsNullOrEmpty(text) || text.Length < 3) return false;
+            // README 10절 표기 R2:R, C1:U 를 옛 표기 R2>, C1^ 로 바꿔 읽는다.
+            int colon = text.IndexOf(':');
+            if (colon > 0 && colon == text.Length - 2)
+            {
+                char d = char.ToUpperInvariant(text[colon + 1]);
+                char old = d == 'R' ? '>' : d == 'L' ? '<' : d == 'U' ? '^' : d == 'D' ? 'v' : '?';
+                text = text.Substring(0, colon) + old;
+            }
             char k = char.ToUpperInvariant(text[0]);
             if (k != 'R' && k != 'C') return false;
             int i = 1, idx = 0;

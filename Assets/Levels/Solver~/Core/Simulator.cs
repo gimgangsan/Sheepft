@@ -348,7 +348,7 @@ namespace Sheepft.Core
                             var b = E[j];
                             if (b.Kind != Kind.Wolf || b.Burned || b.Pos != a.Pos) continue;
                             a.Count += b.Count;
-                            a.Wet = a.Wet && b.Wet;
+                            a.Wet = a.Wet || b.Wet; // 하나라도 젖었으면 무리도 젖는다.
                             if (b.Meal > a.Meal) a.Meal = b.Meal;
                             E.RemoveAt(j);
                             merged = true;
@@ -408,15 +408,29 @@ namespace Sheepft.Core
             return any;
         }
 
-        /// <summary>2. 자동 반응. 말의 발견 → 말의 먹기 → 소의 냄새 → 늑대의 양 잡기.</summary>
+        /// <summary>2. 자동 반응. 늑대의 양 잡기 → 말의 먹기 → 말의 발견 → 소의 냄새 순으로 한 바퀴.</summary>
         private bool AutoReactions()
         {
             bool ch = false;
             bool baskets = L.HasKind[(int)Kind.Basket];
 
             // 자동 반응 도중에는 말, 소, 늑대가 자리를 옮기지 않으므로 순서를 그때그때 찾아도 된다.
+            if (L.HasKind[(int)Kind.Wolf])
+            {
+                for (var w = NextInOrder(Kind.Wolf, null); w != null; w = NextInOrder(Kind.Wolf, w))
+                {
+                    if (w.Burned) continue;
+                    if (WolfCatch(w)) ch = true;
+                    if (lost) return true;
+                }
+            }
             if (baskets && L.HasKind[(int)Kind.Horse])
             {
+                for (var h = NextInOrder(Kind.Horse, null); h != null; h = NextInOrder(Kind.Horse, h))
+                {
+                    if (h.Sated) continue;
+                    if (HorseEat(h)) ch = true;
+                }
                 for (var h = NextInOrder(Kind.Horse, null); h != null; h = NextInOrder(Kind.Horse, h))
                 {
                     if (h.Sated || h.Target >= 0) continue;
@@ -427,11 +441,6 @@ namespace Sheepft.Core
                     if (b.Carried) Events |= Ev.HorseLure;
                     if (Log != null) Log.Add("말 " + At(h.Pos) + " 바구니 " + At(b.Pos) + " 발견");
                     ch = true;
-                }
-                for (var h = NextInOrder(Kind.Horse, null); h != null; h = NextInOrder(Kind.Horse, h))
-                {
-                    if (h.Sated) continue;
-                    if (HorseEat(h)) ch = true;
                 }
             }
 
@@ -450,15 +459,6 @@ namespace Sheepft.Core
                 }
             }
 
-            if (L.HasKind[(int)Kind.Wolf])
-            {
-                for (var w = NextInOrder(Kind.Wolf, null); w != null; w = NextInOrder(Kind.Wolf, w))
-                {
-                    if (w.Burned) continue;
-                    if (WolfCatch(w)) ch = true;
-                    if (lost) return true;
-                }
-            }
             return ch;
         }
 
@@ -494,7 +494,7 @@ namespace Sheepft.Core
                     if (s.Kind != Kind.Sheep) continue;
                     int ring = Ring(wr, wc, s.Pos);
                     if (ring > range) continue;
-                    if (best == null || ring < bestRing || (ring == bestRing && (s.Pos < best.Pos || (s.Pos == best.Pos && s.Id < best.Id))))
+                    if (best == null || ring < bestRing || (ring == bestRing && (s.Pos < best.Pos || (s.Pos == best.Pos && EatsBefore(s, best)))))
                     {
                         best = s;
                         bestRing = ring;
@@ -511,6 +511,14 @@ namespace Sheepft.Core
             for (int i = 0; i < E.Count; i++) if (E[i].Kind == Kind.Sheep) left++;
             if (left < L.TargetSheep) lost = true;
             return true;
+        }
+
+        /// <summary>같은 칸에서는 젖거나 화상 입은 양을 먼저 먹는다.</summary>
+        private static bool EatsBefore(Entity s, Entity best)
+        {
+            bool sb = s.Wet || s.Burned, bb = best.Wet || best.Burned;
+            if (sb != bb) return sb;
+            return s.Id < best.Id;
         }
 
         private int Ring(int r, int c, int pos)
@@ -817,7 +825,7 @@ namespace Sheepft.Core
                                 changed = true;
                             }
                         }
-                        if (burn && t != Terrain.Fire)
+                        if (burn && t != Terrain.Fire && t != Terrain.Water) // 물 칸은 들불이 되지 않는다.
                         {
                             if (ignite == null) ignite = new List<int>();
                             ignite.Add(p);

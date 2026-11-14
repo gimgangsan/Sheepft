@@ -29,7 +29,7 @@ dotnet run --project Cli -c Release -- check ../stages.txt
 ```
 
 ```bash
-dotnet run --project Cli -c Release -- play ../stages.txt --stage 3 --moves "R1> R1> C2^"
+dotnet run --project Cli -c Release -- play ../stages.txt --stage 3 --moves "R1:R R1:R C2:U"
 ```
 
 ```bash
@@ -44,7 +44,7 @@ dotnet run --project Cli -c Release -- prune ../stages.txt --stage 3
 | `prune` | shift 포인트 정하기. 헤더의 shift는 무시하고 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 포인트만 뺀 조합을 찾아 헤더에 쓸 표기를 출력 |
 
 - 스테이지 번호는 파일 안의 순서이고 1부터 센다.
-- 수는 `R1→ R1← C2↑ C2↓` 또는 `R1> R1< C2^ C2v`로 적는다.
+- 수는 README 10절대로 `R1:R R1:L C2:U C2:D`로 적는다. 옛 표기 `R1→`, `R1>`, `C2^`, `C2v`도 읽는다.
 - `solve` 옵션: `--solutions K`(적어 줄 수순 개수), `--depth D`(탐색 턴 수), `--nodes N`(보관할 상태 수 한도)
 - `prune` 옵션: `--slack S`(제한 턴을 최적 + S로 잡음. 생략하면 헤더의 제한 턴 − 별 3개 기준), `--remove K`(뺄 포인트의 최대 개수, 기본 4)
 
@@ -63,7 +63,7 @@ README 10절 표기를 그대로 읽는다. 한 파일에 레벨을 여러 개 �
 solver만 쓰는 줄을 헤더 아래에 덧붙일 수 있고, 없어도 된다.
 
 ```
-# 돌담 앞에서  shift: R1 : R, C2 : U  제한 6턴  목표 양 2
+# 돌담 앞에서  shift: R1:R, C2:U  제한 6턴  목표 양 2
 @desc 돌 앞에서는 밀려도 제자리입니다.
 @intent SheepMerge
 @stars 3 4
@@ -73,6 +73,7 @@ solver만 쓰는 줄을 헤더 아래에 덧붙일 수 있고, 없어도 된다.
 
 | 줄 | 뜻 |
 | --- | --- |
+| `# 풀이: R1:R, C2:U` | 헤더 바로 다음 줄(선택). `check`가 이 수순으로 승리하는지 확인한다. `stages.txt`에는 스테이지마다 최적해 하나를 적어 두었다 |
 | `@desc` | 플레이어용 설명 |
 | `@intent` | 제한 턴 안의 모든 해에 나와야 하는 이벤트. 이름은 `Core/Events.cs`의 `Ev` |
 | `@optimal` | 최적 길이의 모든 해에 나와야 하는 이벤트. 더 긴 해에는 없어도 된다 (예: `Wait`) |
@@ -80,7 +81,8 @@ solver만 쓰는 줄을 헤더 아래에 덧붙일 수 있고, 없어도 된다.
 | `//` | 주석 |
 
 - 헤더와 돌로 시작하는 맵 줄은 둘 다 `#`으로 시작한다. `shift`라는 말이 있으면 헤더로 읽는다.
-- 길이가 짧은 맵 줄의 오른쪽은 빈칸(`x`)으로 채운다.
+- 길이가 짧은 맵 줄의 오른쪽은 빈칸(`x`)으로 채운다. `stages.txt`의 맵은 모든 줄의 칸 수를 맞춰 적는다(게임 쪽 파서는 줄 길이가 다르면 거부한다).
+- 빈칸은 `-`(외곽)와 `x`(중간) 둘 다 읽는다. 규칙은 같다.
 
 ## solver가 구하는 것
 

@@ -13,7 +13,7 @@ namespace Sheepft.Core
     /// <summary>
     /// README 10절의 ASCII 레벨 표기를 읽는다. 한 파일에 레벨 여러 개를 이어 적을 수 있다.
     ///
-    /// 헤더: "# 제목  shift: R1 : RL, C2 : UD  제한 4턴  목표 양 2"
+    /// 헤더: "# 제목  shift: R1:RL, C2:UD  제한 4턴  목표 양 2"
     /// 그 아래에 맵 줄이 온다. 칸은 공백으로 구분한다.
     ///
     /// solver용 추가 줄(게임 규칙과는 무관하며 생략할 수 있다):
@@ -32,6 +32,9 @@ namespace Sheepft.Core
         private static readonly Regex ShiftItem = new Regex(
             @"^([RC])\s*(\d+)\s*:\s*([RLUD]+)$", RegexOptions.CultureInvariant);
 
+        private static readonly Regex SolutionLine = new Regex(
+            @"^#\s*풀이\s*:(.*)$", RegexOptions.CultureInvariant);
+
         private sealed class Draft
         {
             public string Title;
@@ -41,6 +44,7 @@ namespace Sheepft.Core
             public List<string[]> Rows = new List<string[]>();
             public List<string> Meta = new List<string>();
             public int HeaderLine;
+            public string Solution;
         }
 
         public static Level ParseOne(string text)
@@ -65,7 +69,7 @@ namespace Sheepft.Core
                 {
                     var m = Header.Match(line);
                     if (!m.Success)
-                        throw new LevelFormatException((n + 1) + "번째 줄: 헤더를 읽지 못했다. 예: # 제목  shift: R1 : RL, C2 : UD  제한 4턴  목표 양 2");
+                        throw new LevelFormatException((n + 1) + "번째 줄: 헤더를 읽지 못했다. 예: # 제목  shift: R1:RL, C2:UD  제한 4턴  목표 양 2");
                     if (cur != null) result.Add(Build(cur));
                     cur = new Draft();
                     cur.Title = m.Groups["title"].Value.Trim();
@@ -79,6 +83,10 @@ namespace Sheepft.Core
                 if (cur == null) throw new LevelFormatException((n + 1) + "번째 줄: 레벨 헤더보다 먼저 나온 줄이다.");
 
                 if (line[0] == '@') { cur.Meta.Add(line); continue; }
+
+                // 풀이 줄(선택): "# 풀이: R1:R, C2:U". 돌로 시작하는 맵 줄과 구분한다.
+                var sol = SolutionLine.Match(line);
+                if (sol.Success) { cur.Solution = sol.Groups[1].Value.Trim(); continue; }
 
                 cur.Rows.Add(line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries));
             }
@@ -94,6 +102,7 @@ namespace Sheepft.Core
             var lv = new Level();
             lv.Title = d.Title;
             lv.TurnLimit = d.Limit;
+            lv.SolutionText = d.Solution;
             lv.Rows = d.Rows.Count;
             foreach (var row in d.Rows) if (row.Length > lv.Cols) lv.Cols = row.Length;
             lv.Terrain = new Terrain[lv.Rows * lv.Cols]; // 짧은 줄의 오른쪽은 빈칸(Void)으로 남는다.
@@ -154,6 +163,7 @@ namespace Sheepft.Core
                 case 't': t = Terrain.Tree; break;
                 case '_': t = Terrain.Ash; break;
                 case 'x': t = Terrain.Void; break;
+                case '-': t = Terrain.Void; lv.OuterVoid.Add(pos); break;
                 default: throw new LevelFormatException(where + "모르는 지형 기호 '" + token[0] + "'.");
             }
             lv.Terrain[pos] = t;
@@ -225,7 +235,7 @@ namespace Sheepft.Core
                 string item = raw.Trim();
                 if (item.Length == 0) continue;
                 var m = ShiftItem.Match(item);
-                if (!m.Success) throw new LevelFormatException(where + "shift 표기 '" + item + "'를 읽지 못했다. 예: R1 : RL, C2 : U");
+                if (!m.Success) throw new LevelFormatException(where + "shift 표기 '" + item + "'를 읽지 못했다. 예: R1:RL, C2:U");
                 bool isRow = m.Groups[1].Value == "R";
                 int index = int.Parse(m.Groups[2].Value);
                 string dirs = m.Groups[3].Value;
