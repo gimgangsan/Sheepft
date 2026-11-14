@@ -1,0 +1,278 @@
+// Sheepft 스테이지. 표기는 저장소 루트 README.md 10절을 따른다.
+// @로 시작하는 줄은 solver용 표시다 (Solver~/README.md). 설계와 검증 결과는 StageDesign.md에 있다.
+// shift 포인트는 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 것만 뺐다 (Solver~의 prune 명령).
+
+# 첫 걸음  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD  제한 7턴  목표 양 1
+@desc 줄을 밀면 그 줄의 양이 한 칸 움직입니다. 양을 풀까지 데려가세요.
+@intent ShiftMove
+@stars 3 4
+.   .   g   .
+.S  .   .   .
+.   .   .   .
+
+# 끝에서 끝으로  shift: R0 : R, R1 : RL, R2 : RL, C0 : D, C1 : UD, C2 : UD, C3 : UD  제한 7턴  목표 양 1
+@desc 줄 끝에서 밀려난 양은 반대편 끝으로 나옵니다. 화살표가 한쪽뿐인 줄은 그 방향으로만 밀 수 있습니다.
+@intent SheepWrap
+@stars 3 4
+g   .   .   .
+.   .   .S  .
+.   .   .   .
+
+# 돌담 앞에서  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD  제한 7턴  목표 양 2
+@desc 돌 앞에서는 밀려도 제자리입니다. 멈춘 양 위로 뒤따르던 양이 겹쳐 한 무리가 됩니다.
+@intent SheepMerge
+@stars 3 4
+.   .   g   .
+.   .   .   .
+.S  .S  .   #
+
+# 징검다리  shift: R0 : RL, R1 : RL, R3 : RL, C0 : UD, C1 : UD, C3 : UD, C4 : UD  제한 7턴  목표 양 2
+@desc 줄을 밀면 양은 빈칸을 건너뛰어 다음 칸으로 갑니다. 흩어진 양을 모아 풀로 데려가세요.
+@intent VoidSkip SheepMerge
+@stars 3 4
+.S  .   x   .S  #
+.   .   x   .   .
+x   x   x   x   x
+.   .   .   g   .
+
+# 웅덩이  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD  제한 8턴  목표 양 1
+@desc 물에 들어간 양은 젖습니다. 젖은 양은 풀 위에 있어도 세지 않습니다.
+@intent SheepWrap
+@stars 4 5
+.   .   ~   g
+.   .   .   ~
+.   .S  .   .
+.   .   .   .
+
+# 젖은 털은 타지 않는다  shift: R0 : R, R1 : R, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 9턴  목표 양 1
+@desc 마른 양은 들불에서 화상을 입습니다. 물에 적신 양은 불을 지나며 마르기만 합니다.
+@intent SheepWet SheepDried
+@stars 5 7
+.   ~   ^   .   g
+.S  .   ^   .   g
+
+# 덴 데는 물  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD  제한 11턴  목표 양 1
+@desc 화상 입은 양은 세지 않습니다. 화상은 물에서 낫지만, 젖은 양도 세지 않으니 다시 불에 말려야 합니다.
+@intent SheepCured SheepDried
+@stars 7 9
+.      .   .   g
+.      ^   .   .
+.S(b)  .   ~   .
+.      .   .   .
+
+# 번지는 불  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 7턴  목표 양 1
+@desc 들불은 매 턴 주변 8칸의 나무·울타리·풀로 번집니다. 풀밭이 타기 전에 도착하세요.
+@intent FireSpread
+@stars 3 4
+^   t   t   t   g
+.   .   .   .   .
+.   #   .   .   .
+.S  .   .   .   .
+.   .   .   .   .
+
+# 타는 울타리  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD  제한 10턴  목표 양 1
+@desc 울타리도 탑니다. 길이 열릴 때까지 기다리세요. 아무것도 없는 줄을 밀면 턴만 지나갑니다.
+@intent SheepEnterBurnt SheepDried
+@optimal Wait
+@stars 6 8
+#   .   .   #   .   g
+#   .S  ~   f   .   .
+.   ^   t   .   #   #
+
+# 물 한 양동이  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD  제한 9턴  목표 양 1
+@desc 물 찬 양동이가 들불에 들어가면 불이 꺼지고 재가 남습니다. 양동이와 겹쳐 가면 양도 안전합니다.
+@intent Extinguish
+@stars 5 7
+.   .   ^   .   .   #
+.U  .S  ^   .   g   #
+.   .   ^   .   .   #
+
+# 우물가에서  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD  제한 12턴  목표 양 1
+@desc 빈 양동이는 물에서 채워집니다. 마른 빈 양동이는 불에 타 버리니 물부터 들르세요.
+@intent BucketFilled Extinguish
+@stars 8 10
+~   ^   .   ^   .   g   #
+.B  ^   .   ^   .   .   #
+.S  ^   .   ^   .   .   #
+
+# 늑대다!  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 8턴  목표 양 1
+@desc 늑대는 매 턴 가장 가까운 양 쪽으로 한 칸 걸어옵니다. 같은 칸이 되면 양을 잡아먹습니다. 늑대도 줄을 밀면 함께 밀립니다.
+@intent WolfWalk
+@stars 4 5
+.   .   .   .   .
+.   .   .   .   .
+.   .   gW  .   .
+.   .   .   .   .
+.S  .   .   .   .
+
+# 돌아오지 못하는 길  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 8턴  목표 양 1
+@desc 걷는 동물은 줄 끝을 넘지 못합니다. 돌에 둘러싸인 구석의 늑대는 걸어서 나오지 못합니다. 순환으로 늑대를 다른 구석에 옮겨 가두세요.
+@intent WolfWrap
+@stars 5 7
+gW  #   .   .   .
+#   .   .   .   .
+.   .   .   .S  .
+#   .   .   .   .
+.   #   .   .   .
+
+# 미끼  shift: R0 : R, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : D, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 10턴  목표 양 2
+@desc 양을 먹은 늑대는 다음 턴까지 식사에 빠져 아무것도 하지 않습니다. 목표는 3마리 중 2마리입니다.
+@intent WolfEat MealSpared
+@stars 7 9
+gW  #   .   .   .
+#   .   .   .   .
+.   .   .S  .   .
+.   .   .   .S  .
+.   .S  .   .   .
+
+# 둘이 만나면  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : L, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : U  제한 9턴  목표 양 1
+@desc 늑대끼리 만나면 한 무리가 되어 주변 8칸의 양까지 잡습니다. 하지만 합친 직후에는 다음 턴까지 기절해 아무것도 못 합니다.
+@intent WolfMerge StunSpared
+@stars 6 8
+.W  .   .   .   .
+.   .   .   .   .
+.   .   .S  .   .
+.   .   .   .   #
+.   .   .   #   gW
+
+# 무리의 식탁  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 10턴  목표 양 2
+@desc 무리는 한 번에 마리 수만큼만 먹습니다. 미끼를 몇 마리 겹쳐 보낼지 정하세요.
+@intent PackCatch MealSpared SheepMerge
+@stars 7 9
+.   .   .   .   #
+.   .S  .   .   .
+.   .   .   .S  .
+.S  .   .   g   #
+#   .   .   #   .W2
+
+# 불에 덴 늑대  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD  제한 12턴  목표 양 1
+@desc 화상 입은 늑대는 양을 잡지 못합니다. 늑대는 불에 밀어 넣고, 덴 양은 물로 치료하세요.
+@intent WolfBurned SheepBurned SheepCured
+@stars 9 11
+.   #   ~   .   #
+.S  ^   .   gW  #
+.   #   .   .   #
+
+# 불타는 숲  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD  제한 9턴  목표 양 1
+@desc 숲이 타면 길이 열립니다. 늑대는 불을 걸어서 건너지 못합니다.
+@intent SheepEnterBurnt SheepDried
+@stars 6 8
+.   .   .   #   .   g   #
+.W  .S  ~   t   .   .   #
+.   ^   t   #   .   .   #
+
+# 성질 급한 염소  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, R5 : RL, C0 : UD, C1 : UD, C2 : U, C3 : UD, C4 : UD  제한 9턴  목표 양 1
+@desc 염소는 매 턴 상하좌우 1·2칸 거리의 모든 것을 바깥으로 한 칸 밀쳐 냅니다.
+@intent GoatPushSheep
+@stars 6 8
+.   .   #   .   .
+.G  .   .   .   .
+.   .   .   .   .
+.   .   .   .   .S
+.   #   .   #   .
+.   #   g   #   .
+
+# 돌 뒤는 안전해  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD  제한 9턴  목표 양 1
+@desc 염소는 장애물과 빈칸 너머를 보지 못합니다. 늑대는 염소 앞에, 양은 돌 뒤에 두세요.
+@intent GoatPushWolf GoatSightBlocked
+@stars 6 8
+gW  .   .G  #   #   #   #
+#   .   #   #   #   .S  #
+.   .   .   .   .   .   #
+x   x   .   x   x   x   x
+x   x   .   x   x   x   x
+
+# 염소 소방대  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, C0 : UD, C1 : UD, C2 : UD, C4 : UD, C5 : UD, C6 : UD  제한 8턴  목표 양 1
+@desc 밀 수 없는 줄의 양동이는 염소가 옮겨 줍니다. 물에 넣어 채우고, 불에 넣어 끄기까지 두 번 밀어 줍니다.
+@intent GoatPushItem BucketFilled Extinguish
+@stars 6 8
+#   #   #   .   .G  .   #
+#   #   #   .B  #   #   #
+#   #   #   ~   #   #   #
+.S  .   .   ^   .   g   #
+
+# 과일 바구니  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C3 : UD, C4 : UD  제한 7턴  목표 양 1
+@desc 말은 같은 줄에 바구니가 보이면 한 칸씩 걸어갑니다. 바구니 옆에 닿으면 먹고, 같은 칸의 양을 바구니 자리에 내려놓습니다.
+@intent HorseDropSheep
+@stars 5 7
+#   #   gA  #   #
+.   .   .   .   .
+.   .   .   .   .
+.S  .   .   .   .
+.   .   .H  .   .
+
+# 늑대 택시  shift: R0 : RL, R1 : RL, R2 : RL, C0 : UD, C1 : U, C2 : UD, C3 : U, C4 : U, C5 : UD, C6 : UD, C7 : UD  제한 8턴  목표 양 1
+@desc 바구니를 발견한 말에 탄 동물은 스스로 움직이지 못합니다. 늑대를 태워 멀리 보내세요.
+@intent HorseCarryWolf
+@stars 6 8
+.   .   .   .   .   .HW #   #
+.A  #   #   #   #   .   #   #
+.   .S  .   .   .   .   g   #
+
+# 이어달리기  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, C0 : UD, C1 : UD, C2 : U, C3 : UD, C4 : UD, C5 : UD, C6 : UD  제한 7턴  목표 양 1
+@desc 말이 싣고 가거나 내려놓은 바구니가 다른 말의 눈에 띄면 그 말도 출발합니다.
+@intent HorseLure HorseDropSheep
+@stars 5 7
+gA  .   .   .   .HA #   #
+#   #   .   #   #   #   #
+.   .   .   .   .   .S  #
+#   #   .H  #   #   #   #
+
+# 물 건너 바구니  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, C0 : U, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD  제한 9턴  목표 양 1
+@desc 갈 수 없는 바구니를 본 말은 서 있기만 하고, 등에 탄 늑대도 내리지 못합니다.
+@intent HorseNoPath RideHeld
+@stars 7 9
+.A  .   #   #   #   #   #
+~   ~   #   #   #   #   #
+.S  .HW .   .   .   g   #
+.   .   .   #   #   #   #
+
+# 우직한 소  shift: R0 : L, R1 : RL, R2 : RL, R3 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD, C7 : UD  제한 7턴  목표 양 1
+@desc 소는 3칸 안의 바구니 냄새를 맡고 걸어가며 앞 칸의 것을 밀어냅니다. 바구니가 벽에 닿으면 먹고 멈춥니다.
+@intent CowPushSheep
+@stars 5 7
+.M  .   .A  .   .   .   g   #
+#   #   #   #   #   x   #   #
+#   .S  .   .   .   .   .   #
+#   #   #   #   #   #   #   #
+
+# 소 불도저  shift: R0 : RL, R1 : RL, R3 : RL, C0 : UD, C1 : U, C2 : U, C3 : UD, C4 : UD, C5 : UD, C6 : UD, C7 : UD  제한 8턴  목표 양 1
+@desc 소는 앞길의 늑대도 밀어냅니다. 늑대가 풀에서 밀려난 뒤에 들어가세요.
+@intent CowPushWolf
+@stars 6 8
+#   #   #   #   #   #   #   #
+.M  .   gWA .   .   ^   #   #
+x   x   x   x   x   x   x   x
+#   .   .   .   .   .   .   .S
+
+# 목장의 하루  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, R5 : RL, R6 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C5 : UD, C6 : UD, C7 : UD  제한 8턴  목표 양 1
+@desc 말이 싣고 가는 바구니 냄새를 소가 맡고 따라갑니다. 말이 지나간 뒤, 소가 오기 전에 길에 들어서세요.
+@intent CowLure CowPushSheep
+@stars 6 8
+#   #   #   .HA #   #   #   #
+.M  .   .   .   #   #   #   #
+#   #   #   .   #   #   #   #
+#   #   #   .   #   #   #   #
+#   .   .   .   .   .   .   .
+#   #   #   .   #   #   #   .
+#   #   #   gA  #   #   #   .S
+
+# 늑대 무리의 밤  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : L, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : U  제한 12턴  목표 양 2
+@desc 풀밭의 늑대는 내보낼 수 없습니다. 양을 한 무리로 모으고, 다른 늑대를 끌어들여 무리가 기절한 틈에 들어가세요.
+@intent WolfMerge StunSpared SheepMerge
+@stars 10 12
+.W  .   .   .   .
+.   .   .   .   .
+.   .   .S  .   .
+.S  .   .   .   #
+.   .   .   #   gW
+
+# 마지막 풀밭  shift: R0 : RL, R1 : RL, R2 : RL, R3 : RL, R4 : RL, C0 : UD, C1 : UD, C2 : UD, C3 : UD, C4 : UD, C6 : UD, C7 : UD  제한 13턴  목표 양 2
+@desc 불이 길을 막고 늑대가 풀밭 옆을 지킵니다. 지금까지 배운 것을 모두 쓰세요.
+@intent CowPushSheep
+@stars 11 13
+#   #   #   .   .G  #   #   #
+.S  #   #   .B  #   .M  #   #
+.   #   #   ~   #   .   #   #
+.S  .   .   ^   .   .   .W  #
+#   #   #   #   #   g   .A  #

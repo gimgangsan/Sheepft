@@ -26,11 +26,16 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Tests/` | 단위 테스트 (Unity Test Framework, `EditMode/`) |
 | `Assets/Prefabs/` | 프리팹 |
 | `Assets/Scenes/` | 씬 |
-| `Assets/Levels/` | 레벨 데이터 (README 10절 표기법) |
+| `Assets/Levels/` | 레벨 데이터 `stages.txt` (README 10절 표기법), 스테이지 설계 문서 `StageDesign.md` |
+| `Assets/Levels/Solver~/` | 시뮬레이터, solver, 단위 테스트 (C#, .NET SDK 필요). 사용법은 그 폴더의 `README.md` |
 | `Assets/Settings/` | URP 등 렌더링 설정. 요청이 없으면 건드리지 않는다 |
 
 - 게임에 들어가지 않는 파일(미리보기 이미지, 임시 스크립트, 테스트 출력)은 `Assets/` 안에 두지 않는다. `Assets/` 안의 파일은 Unity가 모두 불러온다.
-- 문서는 저장소 루트에 둔다.
+  - 예외: 이름이 `~`로 끝나는 폴더는 Unity가 불러오지 않는다. `Solver~`가 그렇다. 이 폴더에는 `.meta`가 생기지 않는다.
+- 문서는 저장소 루트에 둔다. 스테이지 설계 문서만 레벨 데이터 옆에 둔다.
+- 레벨을 만들거나 고치면 `Solver~`의 `check` 명령으로 검증한다.
+- 레벨의 shift 포인트는 최소한으로 줄이지 않는다. 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 포인트만 `prune` 명령으로 찾아 뺀다. 여러 개를 빼야 하면 포인트 대신 맵의 지형을 고친다.
+  - 예외: 21–30번은 지형을 고치는 대신 `prune`이 알려 주는 포인트를 여러 개 빼도 된다. "우회해 없음" 기준은 그대로다. 뺀 포인트와 이유는 `StageDesign.md`에 적는다.
 
 ## 스프라이트 규칙
 

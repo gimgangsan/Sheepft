@@ -1,0 +1,6 @@
+bin/
+obj/
+
+# 저장소 루트의 Unity용 .gitignore가 프로젝트 파일을 무시한다. 여기 것은 직접 쓴 파일이라 올린다.
+!*.csproj
+!*.slnx

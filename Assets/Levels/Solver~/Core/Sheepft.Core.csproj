@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- UnityEngine에 의존하지 않는 순수 라이브러리. Unity 6이 받는 범위(.NET Standard 2.1, C# 9)에 맞춘다. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Sheepft.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>
