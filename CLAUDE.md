@@ -47,7 +47,7 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 - **`.aseprite` 파일 하나만 저장한다. PNG로 내보내지 않는다.** Unity의 2D Aseprite Importer(`com.unity.2d.aseprite`)가 `.aseprite`를 바로 불러온다. PNG가 꼭 필요하면 `Assets/` 밖에 저장한다.
 - 파일 이름은 소문자 snake_case다. 예: `sheep.aseprite`, `fruit_basket.aseprite`, `wild_fire.aseprite`
 - 오브젝트 하나에 파일 하나를 쓴다. 애니메이션은 같은 파일 안에 프레임과 태그(`idle`, `walk` 등)로 넣는다.
-- 기본 크기는 32×32다. 동물과 물건은 발이 아래쪽에 오도록 그리고 1–2px 여백을 둔다.
+- 기본 크기는 32×32다. 동물과 물건(shift하면 움직이는 오브젝트)은 **모든 프레임을 가운데 28×28(x 2–29, y 2–29) 안에 그린다.** 바깥 2px은 비운다. 한 칸에 여럿이 겹쳐도 구분되고, 애니메이션이 칸 밖으로 나가지 않게 하기 위해서다. 발은 아래쪽 y 29에 둔다.
 - Unity Import 설정: Pixels Per Unit 32, Filter Mode Point (no filter), Compression None
 - 빛은 왼쪽 위에서 온다. 바깥선은 1px로 그리고 색은 `#2b2433`이다.
 
@@ -95,6 +95,7 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 - `.meta` 파일은 Unity가 만든다. 직접 만들거나 고치지 않는다.
 - 이미 `.meta`가 있는 에셋을 Unity 밖에서 옮기거나 이름을 바꾸면 `.meta`도 똑같이 옮긴다. 그래야 참조가 끊어지지 않는다.
 - 에셋과 `.meta`는 함께 커밋한다.
+- `.aseprite`의 그림 크기나 위치를 Unity 밖에서 바꾸면 Aseprite Importer가 `.meta`에 저장해 둔 예전 sprite rect를 그대로 써서 그림이 잘려 보일 수 있다. 텍스처 크기가 같으면 rect를 다시 계산하지 않기 때문이다. 이럴 때는 importer의 `m_AnimatedSpriteImportData`를 비우고 다시 import한다. 스프라이트 ID는 셀 정보에서 이어지므로 참조는 끊어지지 않는다.
 - `Library/`, `Temp/`, `Logs/`, `UserSettings/`는 기기마다 따로 생기는 폴더라서 git에 올리지 않는다.
 
 ## 두 기기에서 작업하기

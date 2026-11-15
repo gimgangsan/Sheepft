@@ -184,6 +184,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1786537825910445337, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 5433794765315604673, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -263,6 +267,14 @@ PrefabInstance:
     - target: {fileID: 5433794765315604673, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7631008828310094322, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4293456116
+      objectReference: {fileID: 0}
+    - target: {fileID: 7631008828310094322, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 8063907574947199215, guid: 905645427c5ae8745a9b5537bce164f2, type: 3}
       propertyPath: m_Name

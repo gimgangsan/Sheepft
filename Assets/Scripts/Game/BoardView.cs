@@ -79,7 +79,7 @@ namespace Sheepft.Game
                     continue;
                 }
 
-                // 모든 칸 밑에 땅을 깐다. 장애물과 물가의 투명한 부분으로 땅이 보인다.
+                // 모든 칸 밑에 땅을 깐다. 다른 지형(물, 풀, 들불, 재, 장애물)은 가장자리가 투명한 덮개라서 그 사이로 땅이 보인다.
                 if (groundPrefab != null)
                 {
                     var floor = Instantiate(groundPrefab, terrainRoot);
