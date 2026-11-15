@@ -338,19 +338,18 @@ namespace Sheepft.Game
                 if (moved != null && boardView.View(moved.Id) != null) moves.Add(moved);
             }
 
-            // 걷기 전에 보여 줄 것: 염소의 공격 동작. 소가 앞 칸을 밀며 걸으면 `push` 동작을 쓴다.
-            bool cowPush = false;
+            // 염소의 공격: 로직은 네 방향을 한꺼번에 처리했지만, 화면은 한 방향씩 차례로 박치기한다.
             foreach (var e in step)
             {
                 var attacked = e as AttackedEvent;
                 if (attacked != null && boardView.View(attacked.Id) != null)
-                {
-                    var goat = boardView.View(attacked.Id);
-                    goat.PlayAction("attack", true);
-                    foreach (var dir in new[] { Dir.Up, Dir.Right, Dir.Down, Dir.Left })
-                        if (boardView.InGrid(goat.Pos.Step(dir)))
-                            boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
-                }
+                    yield return PlayGoatAttack(boardView.View(attacked.Id), attacked.Dirs, moves, move);
+            }
+
+            // 소가 앞 칸을 밀며 걸으면 `push` 동작을 쓴다.
+            bool cowPush = false;
+            foreach (var e in step)
+            {
                 var pushed = e as MovedEvent;
                 if (pushed != null && pushed.Cause == MoveCause.CowPush)
                 {
@@ -368,6 +367,8 @@ namespace Sheepft.Game
                         boardView.View(m.Id).SetFlip(FacesLeft(m, move));
                     if (m.Cause == MoveCause.Walk) boardView.View(m.Id).PlayAction(walkTag, false);
                 }
+                // 말이 돌아섰으면 등에 탄 것도 반대쪽 등으로 옮긴다. 아직 모두 출발 칸에 있으므로 다시 배치해도 된다.
+                boardView.Layout();
 
                 float moveSeconds = Settings.moveSeconds;
                 for (float t = 0f; t < moveSeconds; t += Time.deltaTime)
@@ -376,16 +377,7 @@ namespace Sheepft.Game
                     foreach (var m in moves) PlaceMoving(m, move, k);
                     yield return null;
                 }
-                foreach (var m in moves)
-                {
-                    var view = boardView.View(m.Id);
-                    view.Pos = m.To;
-                    view.SetAlpha(1f);
-                    view.StopAction(walkTag);
-                    // 양이 풀에 도착했다.
-                    if (view.Sheet == "sheep" && !view.Wet && !view.Burned && boardView.ShowsGrass(m.To))
-                        boardView.SpawnEffect("sheep_arrive", m.To);
-                }
+                foreach (var m in moves) EndMove(m, walkTag);
                 boardView.Layout();
             }
 
@@ -411,6 +403,13 @@ namespace Sheepft.Game
                 {
                     var view = boardView.View(target.Id);
                     if (view != null) view.SetTarget(target.TargetId >= 0);
+                    other = true;
+                }
+                var rider = e as RiderChangedEvent;
+                if (rider != null)
+                {
+                    var view = boardView.View(rider.Id);
+                    if (view != null) view.RiderId = rider.RiderId;
                     other = true;
                 }
                 var count = e as CountChangedEvent;
@@ -440,6 +439,70 @@ namespace Sheepft.Game
             {
                 boardView.Layout();
                 yield return new WaitForSeconds(Settings.stepPauseSeconds);
+            }
+        }
+
+        /// <summary>이동이 끝난 오브젝트를 도착 칸에 놓는다.</summary>
+        private void EndMove(MovedEvent m, string walkTag)
+        {
+            var view = boardView.View(m.Id);
+            view.Pos = m.To;
+            view.SetAlpha(1f);
+            view.StopAction(walkTag);
+            // 양이 풀에 도착했다.
+            if (view.Sheet == "sheep" && !view.Wet && !view.Burned && boardView.ShowsGrass(m.To))
+                boardView.SpawnEffect("sheep_arrive", m.To);
+        }
+
+        /// <summary>
+        /// 염소가 공격한 방향마다 차례로: 그 방향으로 짧게 튀어 나갔다가 빠르게 돌아온다.
+        /// 부딪히는 순간 그 방향에 충격파가 나오고, 그 방향으로 밀린 오브젝트가 움직이기 시작한다.
+        /// 여기서 보여 준 이동은 moves에서 뺀다.
+        /// </summary>
+        private IEnumerator PlayGoatAttack(EntityView goat, Dir[] dirs, List<MovedEvent> moves, ShiftPoint move)
+        {
+            var s = Settings;
+            Vector3 home = goat.BasePosition;
+            foreach (var dir in dirs)
+            {
+                // 밀려나는 방향이 곧 공격 방향이다(염소는 바깥으로 1칸씩 민다).
+                var pushed = moves.FindAll(m => m.Cause == MoveCause.Push && DirBetween(m.From, m.To) == dir);
+                foreach (var m in pushed) moves.Remove(m);
+
+                if (dir == Dir.Left || dir == Dir.Right) goat.SetFlip(dir == Dir.Left);
+                goat.PlayAction("attack", true);
+
+                Vector3 lunge = DirVector(dir) * s.goatLungeDistance;
+                float hit = s.goatLungeSeconds;
+                float end = Mathf.Max(hit + s.goatReturnSeconds, hit + (pushed.Count > 0 ? s.moveSeconds : 0f));
+                bool impact = false;
+                for (float t = 0f; t < end; t += Time.deltaTime)
+                {
+                    // 나갈 때는 점점 빠르게(가속), 돌아올 때는 일정하게 빠르게.
+                    float offset = t < hit ? Mathf.Pow(t / hit, 2f)
+                        : Mathf.Clamp01(1f - (t - hit) / s.goatReturnSeconds);
+                    goat.Place(home + lunge * offset);
+
+                    if (t >= hit)
+                    {
+                        if (!impact)
+                        {
+                            impact = true;
+                            boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                        }
+                        float k = Mathf.Clamp01(s.moveCurve.Evaluate((t - hit) / s.moveSeconds));
+                        foreach (var m in pushed) PlaceMoving(m, move, k);
+                    }
+                    yield return null;
+                }
+
+                // 프레임이 길어 부딪히는 순간을 건너뛰었어도 이펙트는 나온다.
+                if (!impact) boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                goat.Place(home);
+                foreach (var m in pushed) EndMove(m, "walk");
+                boardView.Layout();
+                home = goat.BasePosition;
+                if (s.goatAttackGapSeconds > 0f) yield return new WaitForSeconds(s.goatAttackGapSeconds);
             }
         }
 

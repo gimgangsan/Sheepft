@@ -403,6 +403,9 @@ namespace Sheepft.Core
                     }
                 }
 
+                // 말의 등에 태울 것을 정한다.
+                if (L.HasKind[(int)Kind.Horse] && Riders.Update(S)) ch = true;
+
                 any |= ch;
             } while (ch);
             return any;
@@ -657,20 +660,19 @@ namespace Sheepft.Core
             E.Remove(basket);
             if (Log != null) Log.Add("말 " + At(h.Pos) + " 바구니 " + At(dest) + " 를 먹음");
 
-            // 말과 같은 칸의 다른 오브젝트(다른 말 제외)를 모두 바구니가 있던 칸으로 옮긴다.
+            // 등에 태운 것을 바구니가 있던 칸에 내려놓는다. 같은 칸의 다른 오브젝트는 그대로 둔다.
             Snapshot();
-            bool dropped = false;
-            for (int i = 0; i < E.Count; i++)
+            var x = Riders.Of(S, h);
+            if (x != null)
             {
-                var x = E[i];
-                if (x == h || x.Pos != h.Pos || x.Kind == Kind.Horse) continue;
                 x.Pos = dest;
-                dropped = true;
                 if (x.Kind == Kind.Sheep) Events |= Ev.HorseDropSheep;
                 if (x.Kind == Kind.Basket) x.Carried = true;
                 Entered(x);
+                Events |= Ev.HorseDrop;
+                CheckSheepMerge();
             }
-            if (dropped) { Events |= Ev.HorseDrop; CheckSheepMerge(); }
+            h.Rider = -1;
 
             h.Sated = true;
             h.Target = -1;
@@ -689,12 +691,11 @@ namespace Sheepft.Core
             int np = L.Nb[h.Pos * 4 + dir];
             if (Log != null) Log.Add("말 " + At(h.Pos) + " → " + At(np));
 
-            // 운반: 같은 칸의 다른 오브젝트(다른 말 제외)를 모두 데리고 간다.
+            // 운반: 등에 태운 것만 데리고 간다.
             Snapshot();
-            for (int i = 0; i < E.Count; i++)
+            var x = Riders.Of(S, h);
+            if (x != null)
             {
-                var x = E[i];
-                if (x == h || x.Pos != h.Pos || x.Kind == Kind.Horse) continue;
                 x.Pos = np;
                 Events |= Ev.HorseCarry;
                 if (x.Kind == Kind.Sheep) Events |= Ev.HorseCarrySheep;
@@ -710,14 +711,14 @@ namespace Sheepft.Core
             return true;
         }
 
-        /// <summary>발견 상태인 말과 같은 칸의 다른 동물은 탑승 상태다. 위치로만 판단한다.</summary>
+        /// <summary>발견 상태인 말의 등에 탄 동물은 탑승 상태다. 같은 칸에 있기만 한 동물은 아니다.</summary>
         private bool Mounted(Entity e)
         {
             if (e.Kind == Kind.Horse || !L.HasKind[(int)Kind.Horse]) return false;
             for (int i = 0; i < E.Count; i++)
             {
                 var h = E[i];
-                if (h.Kind == Kind.Horse && h.Pos == e.Pos && h.Target >= 0) return true;
+                if (h.Kind == Kind.Horse && h.Pos == e.Pos && h.Target >= 0 && h.Rider == e.Id) return true;
             }
             return false;
         }

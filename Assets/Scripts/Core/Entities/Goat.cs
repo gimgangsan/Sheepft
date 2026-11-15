@@ -16,8 +16,10 @@ namespace Sheepft.Core
         public override void AfterShift(Board b)
         {
             var pushes = new List<KeyValuePair<ObjectEntity[], Pos>>();
+            var attacked = new List<Dir>();
             foreach (var dir in Dirs)
             {
+                int before = pushes.Count;
                 Pos? near = null, far = null;
                 foreach (var p in Sight.Ray(b, Pos, dir))
                 {
@@ -32,9 +34,10 @@ namespace Sheepft.Core
                 var beyond = TilePusher.Destination(b, far.Value, dir);
                 if (beyond != null) Add(pushes, b, far.Value, beyond.Value);
                 Add(pushes, b, near.Value, far.Value);
+                if (pushes.Count > before) attacked.Add(dir);
             }
 
-            if (pushes.Count > 0) b.Events.Add(new AttackedEvent(Id));
+            if (pushes.Count > 0) b.Events.Add(new AttackedEvent(Id, attacked.ToArray()));
             foreach (var push in pushes)
                 foreach (var o in push.Key)
                     b.Move(o, push.Value, MoveCause.Push);

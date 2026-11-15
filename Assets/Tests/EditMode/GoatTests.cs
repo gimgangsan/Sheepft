@@ -30,6 +30,25 @@ namespace Sheepft.Tests
                 ".  .  .  .  .  .  .", target: 0);
             Assert.IsTrue(board.Events.OfType<MovedEvent>().All(e => e.Cause == MoveCause.Push));
             Assert.AreEqual(5, board.Events.OfType<MovedEvent>().Count());
+            CollectionAssert.AreEqual(new[] { Dir.Up, Dir.Right, Dir.Down, Dir.Left },
+                board.Events.OfType<AttackedEvent>().Single().Dirs);
+        }
+
+        [Test]
+        public void Attack_RecordsOnlyDirectionsThatPushedSomething()
+        {
+            // 화면은 이 방향에만 공격 동작과 이펙트를 보여 준다.
+            var board = TestLevel.AssertAfter(
+                ".  .  .\n" +
+                ".  .S .\n" +
+                ".  .G .\n" +
+                ".  .  .",
+                "R3:R",
+                ".  .S .\n" +
+                ".  .  .\n" +
+                ".  .G .\n" +
+                ".  .  .", target: 0);
+            CollectionAssert.AreEqual(new[] { Dir.Up }, board.Events.OfType<AttackedEvent>().Single().Dirs);
         }
 
         [Test]

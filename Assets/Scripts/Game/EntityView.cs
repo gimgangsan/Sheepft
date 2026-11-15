@@ -38,10 +38,18 @@ namespace Sheepft.Game
         [HideInInspector] public bool Wet, Burned, Filled, Stunned, Eating, HasTarget, Full;
         [HideInInspector] public int Count = 1;
 
+        /// <summary>말: 등에 태운 오브젝트의 Id. 없으면 -1.</summary>
+        [HideInInspector] public int RiderId = -1;
+
+        /// <summary>몸 그림이 왼쪽을 보는가.</summary>
+        public bool FacesLeft => body != null && body.flipX;
+
+        private Vector3 iconBaseLocal;
+        private bool iconBaseKnown;
+
         private SpriteCatalog catalog;
         private readonly List<SpriteRenderer> packCopies = new List<SpriteRenderer>();
         private bool isBucket;
-        private bool isCow;
         private string bodyState;
         private string iconState;
         private string wantedBody;
@@ -68,9 +76,9 @@ namespace Sheepft.Game
             catalog = spriteCatalog;
             Id = o.Id;
             isBucket = o is Bucket;
-            isCow = o is Cow;
             Sheet = SheetName(o);
             if (body == null) body = GetComponentInChildren<SpriteRenderer>();
+            PlaceIcon();
             CopyState(o);
         }
 
@@ -90,6 +98,8 @@ namespace Sheepft.Game
             var seeker = o as BasketSeeker;
             HasTarget = seeker != null && seeker.HasTarget;
             Full = seeker != null && seeker.Full;
+            var horse = o as Horse;
+            RiderId = horse != null ? horse.RiderId : -1;
             actionTag = null;
             SetAlpha(1f);
             RefreshVisuals();
@@ -150,12 +160,13 @@ namespace Sheepft.Game
         {
             wantedBody = isBucket ? (Filled ? "full" : "empty") : "idle";
 
-            // 상태 아이콘은 머리 위에 하나만 보여 준다. 화상 > 기절 > 식사 > 배부름 > 발견·냄새 > 젖음 순이다.
+            // 상태 아이콘은 하나만 보여 준다. 화상 > 기절 > 식사 > 배부름 > 발견 > 젖음 순이다.
+            // 말의 발견과 소의 냄새는 같은 느낌표(`found`)로 보여 준다.
             string iconTag = Burned ? "burned"
                 : Stunned ? "stunned"
                 : Eating ? "eating"
                 : Full ? "full"
-                : HasTarget ? (isCow ? "smell" : "found")
+                : HasTarget ? "found"
                 : Wet ? "wet"
                 : null;
             wantedIcon = iconTag;
@@ -195,9 +206,33 @@ namespace Sheepft.Game
             for (int i = 0; i < packCopies.Count; i++) packCopies[i].sortingOrder = order - 1 - i;
         }
 
+        /// <summary>상태 아이콘만 따로 정렬한다. 등에 태운 것보다 말의 느낌표를 위에 그릴 때 쓴다.</summary>
+        public void SetIconOrder(int order)
+        {
+            if (icon != null) icon.sortingOrder = order;
+        }
+
+        /// <summary>
+        /// 상태 아이콘을 바라보는 쪽에 맞춘다. 프리팹의 Status 위치는 오른쪽을 볼 때 기준이고(말·소는 머리 앞),
+        /// 왼쪽을 보면 x를 뒤집는다.
+        /// </summary>
+        private void PlaceIcon()
+        {
+            if (icon == null) return;
+            if (!iconBaseKnown)
+            {
+                iconBaseLocal = icon.transform.localPosition;
+                iconBaseKnown = true;
+            }
+            var p = iconBaseLocal;
+            if (FacesLeft) p.x = -p.x;
+            icon.transform.localPosition = p;
+        }
+
         public void SetFlip(bool faceLeft)
         {
             if (body != null) body.flipX = faceLeft;
+            PlaceIcon();
         }
 
         public void SetAlpha(float value)

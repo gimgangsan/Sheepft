@@ -35,22 +35,63 @@ namespace Sheepft.Tests
         }
 
         [Test]
-        public void Horse_CarriesObjectsOnItsTile_AndDropsThemWhereTheBasketWas()
+        public void Horse_CarriesOnlyItsRider_AndDropsItWhereTheBasketWas()
         {
+            // 같은 칸에 양과 양동이가 있으면 Id가 작은 양만 등에 태운다. 양동이는 제자리에 남는다.
             var board = TestLevel.AssertAfter(
                 ".HSB . . . .A\n" +
                 ".    . . . .",
                 "R1:R",
-                ".  .HSB . . .A\n" +
-                ".  .    . . .", target: 0);
-            Assert.IsTrue(board.Events.OfType<MovedEvent>().Any(e => e.Cause == MoveCause.Carry));
+                ".B .HS . . .A\n" +
+                ".  .   . . .", target: 0);
+            Assert.AreEqual(1, board.Events.OfType<MovedEvent>().Count(e => e.Cause == MoveCause.Carry));
             Assert.IsTrue(board.Events.OfType<TargetChangedEvent>().Any(e => e.Id == 0 && e.TargetId == 3));
 
             TestLevel.Play(board, "R1:R, R1:R");
             TestLevel.AssertMap(
-                ".  . . .H .SB\n" +
+                ".B . . .H .S\n" +
                 ".  . . .  .", board);
             Assert.IsTrue(board.Events.OfType<MovedEvent>().Any(e => e.Cause == MoveCause.HorseEat));
+            Assert.AreEqual(-1, TheHorse(board).RiderId);
+        }
+
+        [Test]
+        public void Horse_SeatsRiderWhenLevelOpens()
+        {
+            var board = TestLevel.Make(".HS .", target: 0);
+            var sheep = board.Objects.OfType<Sheep>().Single();
+            Assert.AreEqual(sheep.Id, TheHorse(board).RiderId);
+            Assert.IsEmpty(board.Events);
+        }
+
+        [Test]
+        public void Horse_KeepsTheFirstRider_WhenAnObjectWithSmallerIdEnters()
+        {
+            var board = TestLevel.Make(".S .HB . .A", target: 0);
+            var horse = TheHorse(board);
+            var sheep = board.Objects.OfType<Sheep>().Single();
+            var bucket = board.Objects.OfType<Bucket>().Single();
+            Assert.AreEqual(bucket.Id, horse.RiderId);
+
+            board.Move(sheep, horse.Pos, MoveCause.Shift);
+            Settler.Settle(board);
+            Assert.AreEqual(bucket.Id, horse.RiderId);
+            Assert.IsTrue(horse.HasTarget);
+        }
+
+        [Test]
+        public void Horse_TakesTheNextObjectWhenItsRiderLeaves()
+        {
+            var board = TestLevel.Make(".HSB .", target: 0);
+            var horse = TheHorse(board);
+            var sheep = board.Objects.OfType<Sheep>().Single();
+            var bucket = board.Objects.OfType<Bucket>().Single();
+            Assert.AreEqual(sheep.Id, horse.RiderId);
+
+            board.Move(sheep, new Pos(0, 1), MoveCause.Shift);
+            Settler.Settle(board);
+            Assert.AreEqual(bucket.Id, horse.RiderId);
+            Assert.IsTrue(board.Events.OfType<RiderChangedEvent>().Any(e => e.Id == horse.Id && e.RiderId == bucket.Id));
         }
 
         [Test]
@@ -239,6 +280,21 @@ namespace Sheepft.Tests
             Assert.IsTrue(wolf.IsRiding(board));
             Assert.IsTrue(wolf.IsIncapacitated(board));
             Assert.IsFalse(TheHorse(board).IsRiding(board));
+        }
+
+        [Test]
+        public void Riding_OnlyTheRiderIsHeld_OtherAnimalsOnTheTileAct()
+        {
+            // 등에는 Id가 작은 바구니가 탔다. 같은 칸의 늑대는 탑승이 아니므로 양에게 걸어간다.
+            var board = TestLevel.AssertAfter(
+                ".HAW . . . .A\n" +
+                ".S   . . . .\n" +
+                ".    . . . .",
+                "R2:R",
+                ".  .HA . . .A\n" +
+                ".W .   . . .\n" +
+                ".  .   . . .", target: 0);
+            Assert.IsFalse(board.Objects.OfType<Wolf>().Single().IsRiding(board));
         }
 
         [Test]

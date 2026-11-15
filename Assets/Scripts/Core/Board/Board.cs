@@ -248,6 +248,27 @@ namespace Sheepft.Core
             return true;
         }
 
+        /// <summary>말이 등에 태운 오브젝트를 정한다. -1이면 내린다. 바뀌었으면 true.</summary>
+        public bool SetRider(Horse horse, int riderId)
+        {
+            if (horse.RiderId == riderId) return false;
+            horse.RiderId = riderId;
+            Events.Add(new RiderChangedEvent(horse.Id, riderId));
+            return true;
+        }
+
+        /// <summary>
+        /// 레벨을 열 때 말의 등에 태울 것을 정한다. 정리 절차를 돌리지 않고 태우기만 한다.
+        /// 처음부터 말과 같은 칸에 있는 것을 처음 화면부터 등에 얹어 보여 주기 위해서다.
+        /// </summary>
+        public void SeatInitialRiders()
+        {
+            foreach (var t in Tiles)
+                foreach (var o in t.Objects.ToArray())
+                    if (o is Horse) o.OnOverlap(this, t);
+            Events.Clear();
+        }
+
         /// <summary>말·소의 배부름을 정한다. 바뀌었으면 true.</summary>
         public bool SetFull(BasketSeeker animal, bool full)
         {

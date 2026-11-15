@@ -49,7 +49,7 @@ namespace Sheepft.Core
         public virtual bool IsIncapacitated(Board b) => Burned || IsRiding(b);
 
         /// <summary>
-        /// 탑승. 발견 상태인 말과 같은 칸에 있는, 말이 아닌 동물이다. 위치로만 판단하고 저장하지 않는다.
+        /// 탑승. 발견 상태인 말의 등에 타고 있다(Horse.RiderId). 같은 칸에 있기만 한 다른 동물은 탑승이 아니다.
         /// </summary>
         public bool IsRiding(Board b)
         {
@@ -57,7 +57,7 @@ namespace Sheepft.Core
             foreach (var o in b.At(Pos).Objects)
             {
                 var horse = o as Horse;
-                if (horse != null && horse.IsCarrying) return true;
+                if (horse != null && horse.IsCarrying && horse.RiderId == Id) return true;
             }
             return false;
         }

@@ -274,10 +274,10 @@ x   x   x   x   x   x   x   x
 #   .   .   .   .   .   .   .S
 
 # A Day at the Ranch  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, R5:RL, R6:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD  제한 8턴  목표 양 1
-# 풀이: C7:U, C7:U, R4:L, R4:L, R4:L, R4:L
+# 풀이: C7:U, C7:U, R4:L, R4:L, R4:L, R4:L, R0:R
 @desc The cow follows the smell of the basket the horse is carrying. Step onto the path after the horse has passed and before the cow arrives.
 @intent CowLure CowPushSheep
-@stars 6 8
+@stars 7 8
 #   #   #   .HA #   #   #   #
 .M  .   .   .   #   #   #   #
 #   #   #   .   #   #   #   #

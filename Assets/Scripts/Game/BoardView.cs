@@ -165,19 +165,56 @@ namespace Sheepft.Game
                 list.Add(view);
             }
 
+            var settings = catalog.Settings;
             foreach (var pair in byTile)
             {
-                var list = pair.Value;
-                list.Sort((a, b) => a.Id.CompareTo(b.Id));
+                var all = pair.Value;
+                all.Sort((a, b) => a.Id.CompareTo(b.Id));
+
+                // 말의 등에 탄 것은 옆으로 늘어놓지 않고 그 말 위에 얹는다.
+                var riders = new Dictionary<int, EntityView>();
+                foreach (var horse in all)
+                {
+                    if (horse.RiderId < 0) continue;
+                    foreach (var other in all)
+                        if (other.Id == horse.RiderId) riders[horse.Id] = other;
+                }
+                var list = all.FindAll(v => !IsRider(riders, v));
+
+                // 정렬: 말 몸 < 탄 것(무리 사본 포함) < 탄 것의 아이콘 < 말의 느낌표. 느낌표가 늘 맨 위에 보이게 한다.
                 int order = RowOrderBase + pair.Key.Row * RowOrderStep + 8;
                 for (int i = 0; i < list.Count; i++)
                 {
-                    float dx = (i - (list.Count - 1) * 0.5f) * catalog.Settings.stackSpacingPixels * Pixel;
-                    list[i].LayoutOffset = new Vector3(dx, 0f, 0f);
-                    list[i].Place(TileBase(pair.Key));
-                    list[i].SetSortingOrder(order + i * 2);
+                    var view = list[i];
+                    float dx = (i - (list.Count - 1) * 0.5f) * settings.stackSpacingPixels * Pixel;
+                    view.LayoutOffset = new Vector3(dx, 0f, 0f);
+                    view.Place(TileBase(pair.Key));
+                    view.SetSortingOrder(order);
+
+                    EntityView rider;
+                    if (riders.TryGetValue(view.Id, out rider))
+                    {
+                        var back = settings.riderOffsetPixels * Pixel;
+                        if (view.FacesLeft) back.x = -back.x;
+                        rider.LayoutOffset = view.LayoutOffset + (Vector3)back;
+                        rider.Place(TileBase(pair.Key));
+                        rider.SetSortingOrder(order + 3);
+                        view.SetIconOrder(order + 5);
+                        order += 6;
+                    }
+                    else
+                    {
+                        order += 2;
+                    }
                 }
             }
+        }
+
+        private static bool IsRider(Dictionary<int, EntityView> riders, EntityView view)
+        {
+            foreach (var rider in riders.Values)
+                if (rider == view) return true;
+            return false;
         }
 
         // ── 이펙트 ──

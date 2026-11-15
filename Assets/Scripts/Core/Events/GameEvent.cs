@@ -130,12 +130,31 @@ namespace Sheepft.Core
     {
         public readonly int Id;
 
-        public AttackedEvent(int id)
+        /// <summary>실제로 무언가를 밀쳐낸 방향. 공격 순서(상 > 우 > 하 > 좌)대로다.</summary>
+        public readonly Dir[] Dirs;
+
+        public AttackedEvent(int id, Dir[] dirs)
         {
             Id = id;
+            Dirs = dirs;
         }
 
-        public override string ToString() => "Attacked #" + Id;
+        public override string ToString() => "Attacked #" + Id + " " + string.Join(",", Dirs);
+    }
+
+    /// <summary>말이 등에 태운 오브젝트가 바뀌었다. 내리면 RiderId가 -1이다.</summary>
+    public sealed class RiderChangedEvent : GameEvent
+    {
+        public readonly int Id;
+        public readonly int RiderId;
+
+        public RiderChangedEvent(int id, int riderId)
+        {
+            Id = id;
+            RiderId = riderId;
+        }
+
+        public override string ToString() => "Rider #" + Id + " → " + (RiderId < 0 ? "없음" : "#" + RiderId);
     }
 
     /// <summary>말·소의 목표 바구니가 바뀌었다. 목표를 잃으면 TargetId가 -1이다.</summary>

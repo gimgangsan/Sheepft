@@ -216,6 +216,7 @@ namespace Sheepft.Core
             rules.Star2Turns = d.Star2;
 
             var board = new Board(tiles, rules);
+            board.SeatInitialRiders();
             rules.ShiftPoints = ParseShiftPoints(d, board);
             if (d.SolutionText != null) rules.Solution = ParseSolution(d, rules.ShiftPoints);
             return board;
