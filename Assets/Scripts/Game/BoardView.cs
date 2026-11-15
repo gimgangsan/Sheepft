@@ -6,12 +6,13 @@ namespace Sheepft.Game
 {
     /// <summary>
     /// 맵을 그린다. 칸 (행 r, 열 c)는 월드에서 x가 c..c+1, y가 -(r+1)..-r인 정사각형이다.
+    /// 지형, 오브젝트, 이펙트는 모두 PrefabCatalog의 프리팹을 찍어 낸다. 배치는 레벨 데이터가 정한다.
     /// 스프라이트의 피벗은 캔버스의 아래쪽 가운데이므로, 모든 그림을 칸의 아래쪽 가운데에 놓는다.
     /// 솟아오르는 장애물(32×48)은 그대로 윗칸을 가린다.
     /// </summary>
     public sealed class BoardView : MonoBehaviour
     {
-        // 정렬 순서: 바닥 0–1, 줄 표시 2, 그 위로 행마다 10씩. 같은 행에서는 장애물 다음에 오브젝트.
+        // 정렬 순서: 바닥 0–1, 줄 표시 2, 그 위로 행마다 20씩. 같은 행에서는 장애물 다음에 오브젝트, 맨 위에 이펙트.
         private const int FloorOrder = 0;
         private const int TerrainOrder = 1;
         private const int HighlightOrder = 2;
@@ -19,15 +20,15 @@ namespace Sheepft.Game
         private const int RowOrderStep = 20;
         private const float Pixel = 1f / 32f;
 
-
         private SpriteCatalog catalog;
+        private PrefabCatalog prefabs;
         private int height, width;
         private TileKind[,] kinds;
         private TerrainType[,] shownTerrain;
-        private SpriteRenderer[,] terrainRenderers;
-        private SpriteAnimator[,] terrainAnimators;
+        private TerrainType[,] builtTerrain;
+        private GameObject[,] terrainObjects;
         private readonly Dictionary<int, EntityView> views = new Dictionary<int, EntityView>();
-        private readonly List<SpriteRenderer> highlights = new List<SpriteRenderer>();
+        private readonly List<GameObject> highlights = new List<GameObject>();
         private Transform terrainRoot, entityRoot, highlightRoot, effectRoot;
         private static Sprite whiteSquare;
 
@@ -40,10 +41,11 @@ namespace Sheepft.Game
         // ── 만들기 ──
 
         /// <summary>새 레벨을 그린다. 이전에 그린 것은 모두 지운다.</summary>
-        public void Build(SpriteCatalog spriteCatalog, Board board)
+        public void Build(SpriteCatalog spriteCatalog, PrefabCatalog prefabCatalog, Board board)
         {
             catalog = spriteCatalog;
-            for (int i = transform.childCount - 1; i >= 0; i--) Destroy(transform.GetChild(i).gameObject);
+            prefabs = prefabCatalog;
+            for (int i = transform.childCount - 1; i >= 0; i--) Remove(transform.GetChild(i).gameObject);
             views.Clear();
             highlights.Clear();
 
@@ -56,14 +58,15 @@ namespace Sheepft.Game
             width = board.Width;
             kinds = new TileKind[height, width];
             shownTerrain = new TerrainType[height, width];
-            terrainRenderers = new SpriteRenderer[height, width];
-            terrainAnimators = new SpriteAnimator[height, width];
+            builtTerrain = new TerrainType[height, width];
+            terrainObjects = new GameObject[height, width];
 
-            var ground = catalog.Get("ground");
+            var groundPrefab = prefabs.Terrain("ground");
             foreach (var tile in board.Tiles)
             {
                 var p = tile.Pos;
                 kinds[p.Row, p.Col] = tile.Kind;
+                builtTerrain[p.Row, p.Col] = TerrainType.Ground;
                 if (tile.Kind == TileKind.OuterBlank) continue;
 
                 if (tile.Kind == TileKind.InnerBlank)
@@ -77,14 +80,13 @@ namespace Sheepft.Game
                 }
 
                 // 모든 칸 밑에 땅을 깐다. 장애물과 물가의 투명한 부분으로 땅이 보인다.
-                var floor = NewRenderer(terrainRoot, "floor " + p, FloorOrder);
-                floor.sprite = ground == null ? null : ground.Frame(0);
-                floor.transform.position = TileBase(p);
-
-                var terrain = NewRenderer(terrainRoot, "terrain " + p, TerrainOrder);
-                terrain.transform.position = TileBase(p);
-                terrainRenderers[p.Row, p.Col] = terrain;
-                terrainAnimators[p.Row, p.Col] = terrain.gameObject.AddComponent<SpriteAnimator>();
+                if (groundPrefab != null)
+                {
+                    var floor = Instantiate(groundPrefab, terrainRoot);
+                    floor.name = "floor " + p;
+                    floor.transform.position = TileBase(p);
+                    SetOrder(floor, FloorOrder);
+                }
             }
 
             SyncAll(board);
@@ -104,10 +106,12 @@ namespace Sheepft.Game
                 EntityView view;
                 if (!views.TryGetValue(o.Id, out view))
                 {
-                    if (EntityView.SheetName(o) == null) continue;
-                    var go = new GameObject(o.GetType().Name + " #" + o.Id);
-                    go.transform.SetParent(entityRoot, false);
-                    view = go.AddComponent<EntityView>();
+                    var prefab = prefabs.Entity(EntityView.SheetName(o));
+                    if (prefab == null) continue;
+                    var go = Instantiate(prefab, entityRoot);
+                    go.name = o.GetType().Name + " #" + o.Id;
+                    view = go.GetComponent<EntityView>();
+                    if (view == null) view = go.AddComponent<EntityView>();
                     view.Setup(catalog, o);
                     views[o.Id] = view;
                 }
@@ -138,7 +142,7 @@ namespace Sheepft.Game
             EntityView view;
             if (!views.TryGetValue(id, out view)) return;
             views.Remove(id);
-            Destroy(view.gameObject);
+            Remove(view.gameObject);
         }
 
         public void SetTerrain(Pos p, TerrainType type)
@@ -179,23 +183,19 @@ namespace Sheepft.Game
         // ── 이펙트 ──
 
         /// <summary>
-        /// 그 칸에 이펙트(태그 `play`)를 한 번 재생한다. 스프라이트가 없으면 아무것도 하지 않는다.
-        /// angle은 오른쪽을 보는 그림을 칸 가운데를 축으로 돌리는 각도다.
+        /// 그 칸에 이펙트 프리팹을 하나 놓는다. 프리팹이 없으면 아무것도 하지 않는다.
+        /// angle은 오른쪽을 보는 그림을 칸 가운데를 축으로 돌리는 각도다. 이펙트는 스스로 사라진다.
         /// </summary>
-        public void SpawnEffect(string sheetName, Pos p, float angle = 0f)
+        public void SpawnEffect(string effectName, Pos p, float angle = 0f)
         {
-            var sheet = catalog.Get(sheetName);
-            if (sheet == null || effectRoot == null) return;
+            var prefab = prefabs.Effect(effectName);
+            if (prefab == null || effectRoot == null) return;
 
-            var pivot = new GameObject("effect " + sheetName);
-            pivot.transform.SetParent(effectRoot, false);
-            pivot.transform.position = TileCenter(p);
-            pivot.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-            var renderer = NewRenderer(pivot.transform, "sprite", RowOrderBase + p.Row * RowOrderStep + RowOrderStep - 1);
-            renderer.transform.localPosition = new Vector3(0f, -0.5f, 0f);
-            var animator = renderer.gameObject.AddComponent<SpriteAnimator>();
-            animator.Play(sheet, "play", false);
-            pivot.AddComponent<OneShotEffect>().Animator = animator;
+            var effect = Instantiate(prefab, effectRoot);
+            effect.name = "effect " + effectName;
+            effect.transform.position = TileCenter(p);
+            effect.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+            SetOrder(effect, RowOrderBase + p.Row * RowOrderStep + RowOrderStep - 1);
         }
 
         public bool InGrid(Pos p)
@@ -215,16 +215,16 @@ namespace Sheepft.Game
         public void ShowLine(IReadOnlyList<Tile> line)
         {
             int count = line == null ? 0 : line.Count;
-            var sheet = catalog.Get("line_highlight");
-            while (highlights.Count < count)
+            while (highlights.Count < count && prefabs.lineHighlight != null)
             {
-                var r = NewRenderer(highlightRoot, "highlight", HighlightOrder);
-                r.gameObject.AddComponent<SpriteAnimator>().Play(sheet, "idle");
-                highlights.Add(r);
+                var go = Instantiate(prefabs.lineHighlight, highlightRoot);
+                go.name = "highlight";
+                SetOrder(go, HighlightOrder);
+                highlights.Add(go);
             }
             for (int i = 0; i < highlights.Count; i++)
             {
-                highlights[i].enabled = i < count;
+                highlights[i].SetActive(i < count);
                 if (i < count) highlights[i].transform.position = TileBase(line[i].Pos);
             }
         }
@@ -233,40 +233,44 @@ namespace Sheepft.Game
 
         private void RedrawTerrain()
         {
+            // 지형이 바뀐 칸은 프리팹을 새로 찍는다. 땅은 바닥에 이미 깔려 있으므로 따로 두지 않는다.
             for (int r = 0; r < height; r++)
             {
                 for (int c = 0; c < width; c++)
                 {
-                    var renderer = terrainRenderers[r, c];
-                    if (renderer == null) continue;
+                    if (kinds[r, c] != TileKind.Normal) continue;
                     var type = shownTerrain[r, c];
-                    var animator = terrainAnimators[r, c];
-                    bool obstacle = type == TerrainType.Stone || type == TerrainType.Fence || type == TerrainType.Tree;
-                    renderer.sortingOrder = obstacle ? RowOrderBase + r * RowOrderStep : TerrainOrder;
+                    if (builtTerrain[r, c] == type) continue;
 
-                    switch (type)
-                    {
-                        case TerrainType.Ground:
-                            // 땅은 바닥에 이미 깔려 있다.
-                            animator.Play(null, null);
-                            break;
-                        case TerrainType.Fire:
-                            if (animator.CurrentTag != "idle") animator.Play(catalog.Get("wild_fire"), "idle");
-                            break;
-                        case TerrainType.Water:
-                        case TerrainType.Grass:
-                        case TerrainType.Fence:
-                            // 연결 타일. 프레임 번호가 이웃 마스크다 (SPRITES.md).
-                            animator.Play(null, null);
-                            var connected = catalog.Get(SheetNameOf(type));
-                            renderer.sprite = connected == null ? null : connected.Frame(NeighbourMask(r, c, type));
-                            break;
-                        default:
-                            animator.Play(null, null);
-                            var single = catalog.Get(SheetNameOf(type));
-                            renderer.sprite = single == null ? null : single.Frame(0);
-                            break;
-                    }
+                    if (terrainObjects[r, c] != null) Remove(terrainObjects[r, c]);
+                    terrainObjects[r, c] = null;
+                    builtTerrain[r, c] = type;
+                    if (type == TerrainType.Ground) continue;
+
+                    var prefab = prefabs.Terrain(SheetNameOf(type));
+                    if (prefab == null) continue;
+                    var p = new Pos(r, c);
+                    var go = Instantiate(prefab, terrainRoot);
+                    go.name = type + " " + p;
+                    go.transform.position = TileBase(p);
+                    bool obstacle = type == TerrainType.Stone || type == TerrainType.Fence || type == TerrainType.Tree;
+                    SetOrder(go, obstacle ? RowOrderBase + r * RowOrderStep : TerrainOrder);
+                    terrainObjects[r, c] = go;
+                }
+            }
+
+            // 연결 타일(물, 풀, 울타리)은 이웃에 맞는 그림으로 바꾼다. 프레임 번호가 이웃 마스크다 (SPRITES.md).
+            for (int r = 0; r < height; r++)
+            {
+                for (int c = 0; c < width; c++)
+                {
+                    var go = terrainObjects[r, c];
+                    if (go == null) continue;
+                    var type = shownTerrain[r, c];
+                    if (type != TerrainType.Water && type != TerrainType.Grass && type != TerrainType.Fence) continue;
+                    var sheet = catalog.Get(SheetNameOf(type));
+                    var renderer = go.GetComponentInChildren<SpriteRenderer>();
+                    if (sheet != null && renderer != null) renderer.sprite = sheet.Frame(NeighbourMask(r, c, type));
                 }
             }
         }
@@ -288,7 +292,7 @@ namespace Sheepft.Game
             return kinds[r, c] == TileKind.Normal && shownTerrain[r, c] == type;
         }
 
-        private static string SheetNameOf(TerrainType type)
+        public static string SheetNameOf(TerrainType type)
         {
             switch (type)
             {
@@ -310,6 +314,19 @@ namespace Sheepft.Game
             var go = new GameObject(childName);
             go.transform.SetParent(transform, false);
             return go.transform;
+        }
+
+        /// <summary>프리팹 안의 모든 SpriteRenderer에 같은 정렬 순서를 준다.</summary>
+        private static void SetOrder(GameObject go, int order)
+        {
+            foreach (var renderer in go.GetComponentsInChildren<SpriteRenderer>(true)) renderer.sortingOrder = order;
+        }
+
+        /// <summary>편집 모드(스테이지 미리 보기)에서도 쓸 수 있게 지운다.</summary>
+        private static void Remove(GameObject go)
+        {
+            if (Application.isPlaying) Destroy(go);
+            else DestroyImmediate(go);
         }
 
         public static SpriteRenderer NewRenderer(Transform parent, string objectName, int order)

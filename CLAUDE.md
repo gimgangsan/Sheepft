@@ -26,7 +26,7 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Sprites/Effects/` | 반응 연출 이펙트: 물보라, 수증기, 연기, 충격파 등 |
 | `Assets/Scripts/` | C# 스크립트. `Core/`(게임 규칙, 순수 C#)와 `Game/`(화면·입력)으로 나눈다 |
 | `Assets/Tests/` | 단위 테스트 (Unity Test Framework, `EditMode/`) |
-| `Assets/Prefabs/` | 프리팹 |
+| `Assets/Prefabs/` | 프리팹. `GameRoot.prefab`(목록과 진행), `Entities/`(오브젝트), `Terrain/`(지형), `Effects/`(이펙트), `UI/`(Canvas UI, 화살표, 줄 표시) |
 | `Assets/Scenes/` | 씬 |
 | `Assets/Levels/` | 레벨 데이터 `stages.txt` (README 10절 표기법), 스테이지 설계 문서 `StageDesign.md` |
 | `Assets/Levels/Solver~/` | 시뮬레이터, solver, 단위 테스트 (C#, .NET SDK 필요). 사용법은 그 폴더의 `README.md` |
@@ -124,9 +124,22 @@ Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.js
 
 ## 게임 씬 설정
 
+화면은 프리팹과 씬으로 이루어져 있고 에디터에서 직접 고친다. 맵 배치만 `stages.txt`가 정한다(Play할 때 프리팹을 찍어 낸다).
+
+| 고칠 것 | 어디서 |
+| --- | --- |
+| 오브젝트의 그림 위치, 아이콘 높이, 붙일 컴포넌트 | `Assets/Prefabs/Entities/*.prefab` (뿌리에 `EntityView`, 자식 `Body`와 `Status`) |
+| 지형, 이펙트 | `Assets/Prefabs/Terrain/`, `Assets/Prefabs/Effects/` |
+| 애니메이션 | `.aseprite`의 태그. Aseprite Importer가 태그마다 AnimationClip과 Animator Controller를 만든다. 상태 이름이 태그 이름이다 |
+| UI 배치, 글자 크기·색, 문구 | `Assets/Prefabs/UI/GameUI.prefab` (Canvas, 기준 640×360, `GameUI` 컴포넌트) |
+| 이동 시간, 간격, 배경색 | `Assets/Data/GameSettings.asset` |
+| 어떤 프리팹을 쓸지 | `GameRoot.prefab`의 `PrefabCatalog` |
+
 - 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.
-- 이 메뉴는 손으로 고친 것을 덮어쓰지 않는다. Import 설정(Pixels Per Unit 32)을 맞추고, `Assets/Prefabs/GameRoot.prefab`의 **스프라이트 목록만** 다시 채운다. `Assets/Scenes/Game.unity`와 `Assets/Data/GameSettings.asset`은 없을 때만 만든다.
-- 프리팹의 스프라이트 목록은 손으로 고치지 않는다. 그 밖의 프리팹 내용, 씬, 조정값(`GameSettings.asset`: 이동 시간, 간격, 색)은 에디터에서 직접 고친다.
+- 이 메뉴는 손으로 고친 것을 덮어쓰지 않는다. Import 설정(Pixels Per Unit 32)을 맞추고, `GameRoot.prefab`의 **스프라이트 목록만** 다시 채운다. 프리팹, 폰트 에셋, UI, 씬의 `GameUI`·`EventSystem`, `GameSettings.asset`은 **없을 때만** 만든다. 처음부터 다시 만들고 싶으면 그 에셋을 지우고 메뉴를 돌린다.
+- 프리팹의 스프라이트 목록(`SpriteCatalog.sheets`)은 손으로 고치지 않는다.
+- 물·풀·울타리 프리팹에는 Animator를 붙이지 않는다. 이웃에 따라 `BoardView`가 프레임을 골라 넣는다.
+- Play하지 않고 스테이지를 보려면 메뉴 **Sheepft > Preview Stage**를 쓴다. 씬에 저장되지 않는다.
 - 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
 
 ## 테스트

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Sheepft.Core;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace Sheepft.Game
@@ -9,21 +10,25 @@ namespace Sheepft.Game
     /// <summary>
     /// 씬 진행. 레벨을 읽어 화면을 만들고, 입력을 받아 한 턴을 두고, 일어난 일을 재생한다.
     /// 규칙은 모두 Sheepft.Core가 계산한다. 여기서는 결과를 보여 주기만 한다.
+    /// 맵은 PrefabCatalog의 프리팹으로, UI는 씬의 GameUI(Canvas)로 그린다.
     /// </summary>
     [RequireComponent(typeof(SpriteCatalog))]
+    [RequireComponent(typeof(PrefabCatalog))]
     public sealed class GameController : MonoBehaviour
     {
-        private const int UiOrder = 1000;
+        private const int ArrowOrder = 1000;
 
         /// <summary>처음 열 스테이지. 0부터 센다.</summary>
         public int startStage;
 
+        [Tooltip("씬의 UI. 비워 두면 씬에서 찾는다.")]
+        public GameUI ui;
+
         private SpriteCatalog catalog;
-        private GameSettings Settings => catalog.Settings;
+        private PrefabCatalog prefabs;
         private Camera cam;
         private BoardView boardView;
-        private Hud hud;
-        private Transform uiRoot;
+        private GameSettings Settings => catalog.Settings;
 
         private int stageIndex;
         private int stageCount;
@@ -38,14 +43,11 @@ namespace Sheepft.Game
 
         private readonly List<Arrow> arrows = new List<Arrow>();
         private Transform arrowRoot;
-        private SpriteButton undoButton, restartButton, nextButton, levelButton;
-        private LevelSelect levelSelect;
+        private Coroutine playback;
+        private float aspect;
 
         /// <summary>이번 실행에서 클리어한 스테이지(0부터). 저장하지 않는다.</summary>
         private readonly HashSet<int> cleared = new HashSet<int>();
-        private SpriteButton pressedButton;
-        private Coroutine playback;
-        private float aspect;
 
         private Board Board => session.Board;
 
@@ -54,6 +56,7 @@ namespace Sheepft.Game
         private void Start()
         {
             catalog = GetComponent<SpriteCatalog>();
+            prefabs = GetComponent<PrefabCatalog>();
             cam = Camera.main;
             if (cam != null)
             {
@@ -64,16 +67,20 @@ namespace Sheepft.Game
 
             boardView = NewChild("board").gameObject.AddComponent<BoardView>();
             arrowRoot = NewChild("arrows");
-            uiRoot = NewChild("ui");
-            hud = NewChild("hud").gameObject.AddComponent<Hud>();
-            hud.Setup(catalog);
 
-            undoButton = new SpriteButton(uiRoot, catalog.Get("button_undo"), "undo", UiOrder, Undo);
-            restartButton = new SpriteButton(uiRoot, catalog.Get("button_restart"), "restart", UiOrder, Restart);
-            nextButton = new SpriteButton(uiRoot, catalog.Get("button_next"), "next", UiOrder, NextStage);
-            levelButton = new SpriteButton(uiRoot, catalog.Get("button_level_select"), "level select", UiOrder, OpenLevelSelect);
-            levelSelect = NewChild("level select").gameObject.AddComponent<LevelSelect>();
-            levelSelect.Setup(catalog);
+            if (ui == null) ui = FindFirstObjectByType<GameUI>();
+            if (ui != null)
+            {
+                ui.UndoClicked += Undo;
+                ui.RestartClicked += Restart;
+                ui.NextClicked += NextStage;
+                ui.LevelSelectClicked += OpenLevelSelect;
+                ui.LevelChosen += LoadStage;
+            }
+            else
+            {
+                Debug.LogWarning("[Sheepft] 씬에 GameUI가 없다. 메뉴 Sheepft > Setup Game Scene을 돌린다.");
+            }
 
             stageCount = LevelParser.ParseAll(catalog.stages.text).Count;
             LoadStage(Mathf.Clamp(startStage, 0, stageCount - 1));
@@ -92,9 +99,10 @@ namespace Sheepft.Game
             stageIndex = index;
             // 맵은 진행하면서 바뀌므로, 스테이지를 열 때마다 파일에서 새로 읽는다.
             session = new GameSession(LevelParser.ParseAll(catalog.stages.text)[index]);
-            boardView.Build(catalog, Board);
+            boardView.Build(catalog, prefabs, Board);
             BuildArrows();
-            PlaceUi();
+            FitCamera();
+            if (ui != null) ui.ShowStage(index + 1, Board.Rules.Name, Board.Rules.Description);
             RefreshUi();
         }
 
@@ -104,63 +112,60 @@ namespace Sheepft.Game
         {
             for (int i = arrowRoot.childCount - 1; i >= 0; i--) Destroy(arrowRoot.GetChild(i).gameObject);
             arrows.Clear();
+            if (prefabs.shiftArrow == null) return;
 
-            var sheet = catalog.Get("shift_arrow");
             foreach (var point in Board.Rules.ShiftPoints)
             {
                 // 화살표는 미는 쪽의 격자 가장자리 바깥에 두고 진행 방향을 가리킨다 (구현 계획 5절).
                 Pos cell;
-                float angle;
                 switch (point.Dir)
                 {
-                    case Dir.Right: cell = new Pos(point.Index, -1); angle = 0f; break;
-                    case Dir.Left: cell = new Pos(point.Index, Board.Width); angle = 180f; break;
-                    case Dir.Down: cell = new Pos(-1, point.Index); angle = -90f; break;
-                    default: cell = new Pos(Board.Height, point.Index); angle = 90f; break;
+                    case Dir.Right: cell = new Pos(point.Index, -1); break;
+                    case Dir.Left: cell = new Pos(point.Index, Board.Width); break;
+                    case Dir.Down: cell = new Pos(-1, point.Index); break;
+                    default: cell = new Pos(Board.Height, point.Index); break;
                 }
 
-                // 그림은 오른쪽을 가리키고 피벗이 아래쪽 가운데다. 칸 가운데를 축으로 돌리려고 한 겹 감싼다.
-                var pivot = new GameObject("arrow " + point);
-                pivot.transform.SetParent(arrowRoot, false);
-                pivot.transform.position = BoardView.TileCenter(cell);
-                pivot.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-                var renderer = BoardView.NewRenderer(pivot.transform, "sprite", UiOrder);
-                renderer.transform.localPosition = new Vector3(0f, -0.5f, 0f);
-                renderer.sprite = sheet == null ? null : sheet.TagFrame("normal");
+                // 프리팹의 그림은 오른쪽을 가리킨다. 칸 가운데를 축으로 돌린다.
+                var go = Instantiate(prefabs.shiftArrow, arrowRoot);
+                go.name = "arrow " + point;
+                go.transform.position = BoardView.TileCenter(cell);
+                go.transform.rotation = Quaternion.Euler(0f, 0f, DirAngle(point.Dir));
+                var renderer = go.GetComponentInChildren<SpriteRenderer>();
+                if (renderer != null) renderer.sortingOrder = ArrowOrder;
 
-                arrows.Add(new Arrow { Point = point, Center = pivot.transform.position, Renderer = renderer });
+                arrows.Add(new Arrow { Point = point, Center = go.transform.position, Renderer = renderer });
             }
         }
 
-        private void PlaceUi()
-        {
-            // 맵은 x 0..너비, y -높이..0. 화살표가 사방으로 한 칸, 그 위에 HUD 한 줄, 아래에 버튼 한 줄이 더 있다.
-            float left = -1f, right = Board.Width + 1f;
-            float bottom = -Board.Height - 1f, top = 1f;
-            float hudY = top + 0.25f;
-            float hudTop = hudY + 1f;
-            float barY = bottom - 0.75f;
-            float barBottom = barY - 0.5f;
-
-            hud.Place(new Vector3(left, hudY, 0f), new Vector3((left + right) * 0.5f, hudY, 0f));
-            restartButton.SetCenter(new Vector3(right - 0.5f, hudY + 0.5f, 0f));
-            undoButton.SetCenter(new Vector3(right - 1.6f, hudY + 0.5f, 0f));
-            // 아래 줄: 왼쪽에 레벨 선택, 가운데에 다음 스테이지. HUD의 숫자와 겹치지 않게 맵 아래에 둔다.
-            levelButton.SetCenter(new Vector3(left + 0.5f, barY, 0f));
-            nextButton.SetCenter(new Vector3((left + right) * 0.5f, barY, 0f));
-
-            FitCamera(left, right, barBottom, hudTop);
-        }
-
-        private void FitCamera(float left, float right, float bottom, float top)
+        /// <summary>
+        /// 맵과 화살표(사방으로 한 칸)가 UI의 위쪽 줄과 아래쪽 줄 사이에 들어오게 카메라를 맞춘다.
+        /// </summary>
+        private void FitCamera()
         {
             if (cam == null) return;
+
+            // 맵은 x 0..너비, y -높이..0.
+            float left = -1f, right = Board.Width + 1f;
+            float bottom = -Board.Height - 1f, top = 1f;
             float margin = Settings.cameraMargin;
             float halfHeight = (top - bottom) * 0.5f + margin;
             float halfWidth = (right - left) * 0.5f + margin;
+
+            float topBar = 0f, bottomBar = 0f;
+            if (ui != null && ui.referenceHeight > 0f)
+            {
+                topBar = ui.topBarPixels / ui.referenceHeight;
+                bottomBar = ui.bottomBarPixels / ui.referenceHeight;
+            }
+            float free = Mathf.Max(0.1f, 1f - topBar - bottomBar);
+
             aspect = cam.aspect;
-            cam.orthographicSize = Mathf.Max(halfHeight, halfWidth / aspect);
-            cam.transform.position = new Vector3((left + right) * 0.5f, (top + bottom) * 0.5f, -10f);
+            float size = Mathf.Max(halfHeight / free, halfWidth / aspect);
+            cam.orthographicSize = size;
+            // 화면 높이는 2 × size다. 위쪽 줄이 더 두꺼우면 맵을 그만큼 아래로 내린다.
+            float shift = (topBar - bottomBar) * size;
+            cam.transform.position = new Vector3((left + right) * 0.5f, (top + bottom) * 0.5f + shift, -10f);
         }
 
         // ── 매 프레임 ──
@@ -168,12 +173,11 @@ namespace Sheepft.Game
         private void Update()
         {
             if (session == null) return;
-            if (cam != null && !Mathf.Approximately(cam.aspect, aspect)) PlaceUi();
+            if (cam != null && !Mathf.Approximately(cam.aspect, aspect)) FitCamera();
 
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
             bool click = mouse != null && mouse.leftButton.wasPressedThisFrame;
-            bool release = mouse != null && mouse.leftButton.wasReleasedThisFrame;
             Vector3 world = Vector3.zero;
             if (mouse != null && cam != null)
             {
@@ -182,13 +186,11 @@ namespace Sheepft.Game
                 world.z = 0f;
             }
 
-            // 레벨 선택 화면이 열려 있으면 그것만 받는다. 번호를 누르면 그 스테이지를 열고, Esc나 빈 곳은 닫는다.
-            if (levelSelect.IsOpen)
+            // 레벨 선택 화면이 열려 있으면 그쪽 버튼만 받는다. Esc로 닫는다.
+            if (ui != null && ui.IsLevelSelectOpen)
             {
-                int hit = levelSelect.Hover(world);
-                bool escape = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
-                if (click && hit >= 0) { levelSelect.Close(); LoadStage(hit); }
-                else if (click || escape) levelSelect.Close();
+                if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) ui.CloseLevelSelect();
+                boardView.ShowLine(null);
                 return;
             }
 
@@ -215,44 +217,23 @@ namespace Sheepft.Game
                 if (next && Board.Result == GameResult.Won) { NextStage(); return; }
             }
 
-            UpdateButtons(world, click, release);
             UpdateArrows(world, click);
-        }
-
-        private void UpdateButtons(Vector3 world, bool click, bool release)
-        {
-            foreach (var button in new[] { undoButton, restartButton, nextButton, levelButton })
-            {
-                bool over = button.Contains(world);
-                if (click && over) pressedButton = button;
-                button.SetState(pressedButton == button ? "pressed" : over ? "hover" : "normal");
-            }
-
-            if (release && pressedButton != null)
-            {
-                var button = pressedButton;
-                pressedButton = null;
-                if (button.Contains(world)) button.OnClick();
-            }
-
-            // 패배하면 undo와 재시작을 눈에 띄게 한다.
-            bool lost = Board.Result == GameResult.Lost;
-            float pulse = lost ? 1f + 0.12f * Mathf.Abs(Mathf.Sin(Time.time * 4f)) : 1f;
-            undoButton.SetPulse(pulse);
-            restartButton.SetPulse(pulse);
         }
 
         private void UpdateArrows(Vector3 world, bool click)
         {
             var sheet = catalog.Get("shift_arrow");
             bool playing = Board.Result == GameResult.InProgress;
+            // 마우스가 UI 위에 있으면 그 밑의 화살표는 반응하지 않는다.
+            bool overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             Arrow hovered = null;
             foreach (var arrow in arrows)
             {
                 var d = world - arrow.Center;
-                bool over = playing && pressedButton == null && Mathf.Abs(d.x) <= 0.5f && Mathf.Abs(d.y) <= 0.5f;
+                bool over = playing && !overUi && Mathf.Abs(d.x) <= 0.5f && Mathf.Abs(d.y) <= 0.5f;
                 if (over) hovered = arrow;
-                if (sheet != null) arrow.Renderer.sprite = sheet.TagFrame(!playing ? "disabled" : over ? "hover" : "normal");
+                if (sheet != null && arrow.Renderer != null)
+                    arrow.Renderer.sprite = sheet.TagFrame(!playing ? "disabled" : over ? "hover" : "normal");
             }
 
             boardView.ShowLine(hovered == null ? null : Board.Line(hovered.Point.Axis, hovered.Point.Index));
@@ -263,11 +244,13 @@ namespace Sheepft.Game
 
         private void Play(ShiftPoint move)
         {
+            // 풀 위의 양 수는 재생이 끝난 뒤에 바꾼다. 남은 턴만 바로 줄인다.
+            int sheepBefore = Board.SheepOnGrass();
             if (!session.Play(move)) return;
             if (Board.Result == GameResult.Won) cleared.Add(stageIndex);
             boardView.ShowLine(null);
             SetArrowTag("disabled");
-            RefreshHud();
+            if (ui != null) ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, sheepBefore, Board.Rules.TargetSheep, false);
             playback = StartCoroutine(PlayEvents(new List<GameEvent>(Board.Events), move));
         }
 
@@ -287,20 +270,15 @@ namespace Sheepft.Game
             RefreshUi();
         }
 
-        private void OpenLevelSelect()
-        {
-            FinishPlaybackIfAny();
-            if (cam != null) levelSelect.Open(cam, stageCount, stageIndex, cleared);
-        }
-
-        private void FinishPlaybackIfAny()
-        {
-            if (playback != null) FinishPlayback();
-        }
-
         private void NextStage()
         {
             if (stageIndex < stageCount - 1) LoadStage(stageIndex + 1);
+        }
+
+        private void OpenLevelSelect()
+        {
+            if (playback != null) FinishPlayback();
+            if (ui != null) ui.OpenLevelSelect(stageCount, stageIndex, cleared);
         }
 
         // ── 이벤트 재생 ──
@@ -395,11 +373,10 @@ namespace Sheepft.Game
                     var view = boardView.View(status.Id);
                     if (view != null)
                     {
-                        // 물에 젖거나 물이 차면 물보라, 들불에서 마르거나 불을 끄면 수증기.
                         // 양동이는 물이 차고 비는 것만 본다(같은 단계에 젖음도 함께 바뀌므로 두 번 나오지 않게).
                         bool water = status.Status == StatusKind.Filled
                             || status.Status == StatusKind.Wet && !HasFilledChange(step, status.Id);
-                        if (water) boardView.SpawnEffect(EffectForWater(status), view.Pos);
+                        if (water) boardView.SpawnEffect(status.On ? "splash" : "steam", view.Pos);
                         view.ApplyStatus(status.Status, status.On);
                     }
                     other = true;
@@ -439,12 +416,6 @@ namespace Sheepft.Game
                 boardView.Layout();
                 yield return new WaitForSeconds(Settings.stepPauseSeconds);
             }
-        }
-
-        /// <summary>젖음이 켜지거나 물이 차면 물보라, 꺼지면(들불에서 마름, 불을 끔) 수증기.</summary>
-        private static string EffectForWater(StatusChangedEvent status)
-        {
-            return status.On ? "splash" : "steam";
         }
 
         private static bool HasFilledChange(List<GameEvent> step, int id)
@@ -558,25 +529,30 @@ namespace Sheepft.Game
 
         private void RefreshUi()
         {
-            RefreshHud();
-            undoButton.Visible = true;
-            restartButton.Visible = true;
-            levelButton.Visible = true;
-            nextButton.Visible = Board.Result == GameResult.Won && stageIndex < stageCount - 1;
+            if (ui != null)
+            {
+                bool cannotWin = Board.CannotWin && Board.Result != GameResult.Won;
+                ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, Board.SheepOnGrass(), Board.Rules.TargetSheep, cannotWin);
+                ui.ShowResult(Board.Result, Stars(), stageIndex < stageCount - 1);
+            }
             SetArrowTag(Board.Result == GameResult.InProgress ? "normal" : "disabled");
         }
 
-        private void RefreshHud()
+        /// <summary>쓴 턴 수로 정하는 별 수. 별 1개는 제한 턴 이내다. 구현 계획 2절.</summary>
+        private int Stars()
         {
-            bool cannotWin = Board.CannotWin && Board.Result != GameResult.Won;
-            hud.Show(Board.Rules.TurnLimit - Board.TurnsUsed, Board.SheepOnGrass(), Board.Rules.TargetSheep, cannotWin);
+            var rules = Board.Rules;
+            if (Board.TurnsUsed <= rules.Star3Turns) return 3;
+            if (Board.TurnsUsed <= rules.Star2Turns) return 2;
+            return 1;
         }
 
         private void SetArrowTag(string tag)
         {
             var sheet = catalog.Get("shift_arrow");
             if (sheet == null) return;
-            foreach (var arrow in arrows) arrow.Renderer.sprite = sheet.TagFrame(tag);
+            foreach (var arrow in arrows)
+                if (arrow.Renderer != null) arrow.Renderer.sprite = sheet.TagFrame(tag);
         }
     }
 }

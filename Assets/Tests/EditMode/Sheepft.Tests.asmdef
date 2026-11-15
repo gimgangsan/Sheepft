@@ -4,6 +4,8 @@
     "references": [
         "Sheepft.Core",
         "Sheepft.Game",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

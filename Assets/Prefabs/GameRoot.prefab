@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 124329869736646891}
   - component: {fileID: 8573118116442118272}
   - component: {fileID: 7431189839788926726}
+  - component: {fileID: 2289199196232796679}
   m_Layer: 0
   m_Name: GameRoot
   m_TagString: Untagged
@@ -651,3 +652,71 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.GameController
   startStage: 0
+  ui: {fileID: 0}
+--- !u!114 &2289199196232796679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 287578020885899462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68d9734cf508ca545962b070fa84766a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.PrefabCatalog
+  entities:
+  - name: sheep
+    prefab: {fileID: 5720598749526338928, guid: 8ee2100b671617440bdea8ee4e6e9a8f, type: 3}
+  - name: wolf
+    prefab: {fileID: 7820123922996844980, guid: 3e2350fc2ffdd5e4ebf21789746650f3, type: 3}
+  - name: goat
+    prefab: {fileID: 8886383500892900689, guid: e28df94d242d8c34dbc49991ca7c9569, type: 3}
+  - name: horse
+    prefab: {fileID: 6410643776532580299, guid: 64e02cb654af2b34a8bbe2b4828c4189, type: 3}
+  - name: cow
+    prefab: {fileID: 9062903311672339716, guid: 0110bef588a8bf34189db22b812b326b, type: 3}
+  - name: fruit_basket
+    prefab: {fileID: 5095175636519339410, guid: 8ba4d6f08df371f43a9e57981eccc57e, type: 3}
+  - name: wooden_bucket
+    prefab: {fileID: 5369281236526764900, guid: 99702083e630cea48992066658deaadc, type: 3}
+  terrain:
+  - name: ground
+    prefab: {fileID: 2140808306871207391, guid: 7132d195c93d0de4880bdab583b1f017, type: 3}
+  - name: stone
+    prefab: {fileID: 4078704964745725501, guid: ccff1f1c83bb16b42914f0fc01edfe32, type: 3}
+  - name: fence
+    prefab: {fileID: 3742929014136979626, guid: 662c14b7c1ce9564a908dcc078d21781, type: 3}
+  - name: tree
+    prefab: {fileID: 2050232768251246314, guid: e1a2ba20489747b44b73fd25682113c0, type: 3}
+  - name: water
+    prefab: {fileID: 2211447436794120820, guid: e8c76e2e844c61f4a911699e8eb00b42, type: 3}
+  - name: wild_fire
+    prefab: {fileID: 2979219718292154953, guid: 7dc0135a5839bfb4baac144bc2a8917f, type: 3}
+  - name: grass
+    prefab: {fileID: 8205723913504496231, guid: b9b4cd475a515f042a7a129b58ffaa67, type: 3}
+  - name: ash
+    prefab: {fileID: 2293595620390240180, guid: fcc8354b7099f114d8963333fe06d8f1, type: 3}
+  effects:
+  - name: splash
+    prefab: {fileID: 8534974679511868, guid: 85ea4c7c52fe42846a17589946b1bccd, type: 3}
+  - name: steam
+    prefab: {fileID: 2163644272049102818, guid: da4e2b5d0db1f244ebed7d6d0d40dc4b, type: 3}
+  - name: ignite
+    prefab: {fileID: 7700843365407555222, guid: 96b1119d48af5c246ac276ed7cf3eff2, type: 3}
+  - name: smoke
+    prefab: {fileID: 7084345359634647639, guid: 2441559157854e844a5f78ec34ba3e0e, type: 3}
+  - name: goat_shockwave
+    prefab: {fileID: 5311399308628018707, guid: 2068d1d2fcf28d64e8ce5dc45d891607, type: 3}
+  - name: cow_impact
+    prefab: {fileID: 1647848935398238075, guid: 50230bcf06b1da54fb0385b007b561e2, type: 3}
+  - name: wolf_merge_dust
+    prefab: {fileID: 2782417527167516036, guid: aa660595c6dc35642ad98df2b3c84ea7, type: 3}
+  - name: sheep_eaten
+    prefab: {fileID: 9196069646791135947, guid: 38febb08881e3a2448c8b7819dcf47c8, type: 3}
+  - name: sheep_arrive
+    prefab: {fileID: 3339631910582933517, guid: cae455ac69fae4948ac4cb05f52c5d3a, type: 3}
+  - name: eat_crumbs
+    prefab: {fileID: 4207539479380071955, guid: 0c4a942c814395d43924798000e21abb, type: 3}
+  shiftArrow: {fileID: 7531627783278068258, guid: e52d58859d1d22e44be3d428105f75d4, type: 3}
+  lineHighlight: {fileID: 5389142726685360683, guid: 4a4957b7a85850a4783f2702ce388d1c, type: 3}

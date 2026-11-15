@@ -35,7 +35,20 @@ namespace Sheepft.Game
             var paths = FindAsepriteFiles();
             int reimported = FixImportSettings(paths);
             var prefab = BuildPrefab(paths);
+            // 오브젝트·지형·이펙트·UI 프리팹은 없을 때만 만든다. 있는 것은 건드리지 않는다.
+            var uiPrefab = GamePrefabBuilder.Build(PrefabPath);
             BuildScene(prefab);
+
+            // 씬에 UI와 EventSystem이 없으면 넣는다. Game 씬이 열려 있을 때만 한다.
+            var active = EditorSceneManager.GetActiveScene();
+            if (active.path == ScenePath)
+            {
+                if (GamePrefabBuilder.EnsureSceneObjects(uiPrefab)) EditorSceneManager.SaveScene(active);
+            }
+            else
+            {
+                Debug.LogWarning("[Sheepft] " + ScenePath + "가 열려 있지 않아 씬의 UI는 확인하지 않았다. 그 씬을 열고 다시 돌린다.");
+            }
             AssetDatabase.SaveAssets();
             Debug.Log("[Sheepft] 설정 완료: .aseprite " + paths.Count + "개 (Import 설정을 고친 것 " + reimported + "개), "
                 + PrefabPath + ", " + ScenePath);
@@ -104,6 +117,7 @@ namespace Sheepft.Game
             {
                 var catalog = root.GetComponent<SpriteCatalog>();
                 if (catalog == null) catalog = root.AddComponent<SpriteCatalog>();
+                if (root.GetComponent<PrefabCatalog>() == null) root.AddComponent<PrefabCatalog>();
                 if (root.GetComponent<GameController>() == null) root.AddComponent<GameController>();
 
                 if (catalog.stages == null) catalog.stages = AssetDatabase.LoadAssetAtPath<TextAsset>(StagesPath);

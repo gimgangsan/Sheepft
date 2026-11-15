@@ -3,7 +3,9 @@
     "rootNamespace": "Sheepft.Game",
     "references": [
         "Sheepft.Core",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
