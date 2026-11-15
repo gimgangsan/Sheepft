@@ -34,9 +34,12 @@ namespace Sheepft.Game
         private int stageCount;
         private GameSession session;
 
+        /// <summary>줄 끝 하나의 표시. shift 포인트가 있으면 화살표, 없으면 X자다.</summary>
         private sealed class Arrow
         {
             public ShiftPoint Point;
+            /// <summary>shift 포인트가 있는 끝인가. false면 X자를 늘 보여 주고 입력을 받지 않는다.</summary>
+            public bool Open;
             public Vector3 Center;
             public SpriteRenderer Renderer;
         }
@@ -114,8 +117,25 @@ namespace Sheepft.Game
             arrows.Clear();
             if (prefabs.shiftArrow == null) return;
 
-            foreach (var point in Board.Rules.ShiftPoints)
+            // 모든 줄의 양 끝에 표시를 하나씩 둔다. 화살표가 한꺼번에 떠 있으면 어지러우므로
+            // shift 포인트가 있는 끝은 마우스를 올렸을 때만 화살표를 보이고, 없는 끝에는 X자를 늘 보인다.
+            var open = new HashSet<ShiftPoint>(Board.Rules.ShiftPoints);
+            var ends = new List<ShiftPoint>();
+            for (int r = 0; r < Board.Height; r++)
             {
+                ends.Add(new ShiftPoint(Axis.Row, r, Dir.Right));
+                ends.Add(new ShiftPoint(Axis.Row, r, Dir.Left));
+            }
+            for (int c = 0; c < Board.Width; c++)
+            {
+                ends.Add(new ShiftPoint(Axis.Col, c, Dir.Down));
+                ends.Add(new ShiftPoint(Axis.Col, c, Dir.Up));
+            }
+
+            var sheet = catalog.Get("shift_arrow");
+            foreach (var point in ends)
+            {
+                bool isOpen = open.Contains(point);
                 // 화살표는 미는 쪽의 격자 가장자리 바깥에 두고 진행 방향을 가리킨다 (구현 계획 5절).
                 Pos cell;
                 switch (point.Dir)
@@ -126,15 +146,20 @@ namespace Sheepft.Game
                     default: cell = new Pos(Board.Height, point.Index); break;
                 }
 
-                // 프리팹의 그림은 오른쪽을 가리킨다. 칸 가운데를 축으로 돌린다.
+                // 프리팹의 그림은 오른쪽을 가리킨다. 칸 가운데를 축으로 돌린다. X자는 돌리지 않는다.
                 var go = Instantiate(prefabs.shiftArrow, arrowRoot);
-                go.name = "arrow " + point;
+                go.name = (isOpen ? "arrow " : "blocked ") + point;
                 go.transform.position = BoardView.TileCenter(cell);
-                go.transform.rotation = Quaternion.Euler(0f, 0f, DirAngle(point.Dir));
+                go.transform.rotation = isOpen ? Quaternion.Euler(0f, 0f, DirAngle(point.Dir)) : Quaternion.identity;
                 var renderer = go.GetComponentInChildren<SpriteRenderer>();
-                if (renderer != null) renderer.sortingOrder = ArrowOrder;
+                if (renderer != null)
+                {
+                    renderer.sortingOrder = ArrowOrder;
+                    if (sheet != null) renderer.sprite = sheet.TagFrame(isOpen ? "hover" : "blocked");
+                    if (isOpen) renderer.enabled = false;
+                }
 
-                arrows.Add(new Arrow { Point = point, Center = go.transform.position, Renderer = renderer });
+                arrows.Add(new Arrow { Point = point, Open = isOpen, Center = go.transform.position, Renderer = renderer });
             }
         }
 
@@ -222,18 +247,18 @@ namespace Sheepft.Game
 
         private void UpdateArrows(Vector3 world, bool click)
         {
-            var sheet = catalog.Get("shift_arrow");
             bool playing = Board.Result == GameResult.InProgress;
             // 마우스가 UI 위에 있으면 그 밑의 화살표는 반응하지 않는다.
             bool overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             Arrow hovered = null;
             foreach (var arrow in arrows)
             {
+                if (!arrow.Open) continue;
                 var d = world - arrow.Center;
                 bool over = playing && !overUi && Mathf.Abs(d.x) <= 0.5f && Mathf.Abs(d.y) <= 0.5f;
                 if (over) hovered = arrow;
-                if (sheet != null && arrow.Renderer != null)
-                    arrow.Renderer.sprite = sheet.TagFrame(!playing ? "disabled" : over ? "hover" : "normal");
+                // 화살표는 마우스를 올린 동안에만 보인다.
+                if (arrow.Renderer != null) arrow.Renderer.enabled = over;
             }
 
             boardView.ShowLine(hovered == null ? null : Board.Line(hovered.Point.Axis, hovered.Point.Index));
@@ -249,7 +274,7 @@ namespace Sheepft.Game
             if (!session.Play(move)) return;
             if (Board.Result == GameResult.Won) cleared.Add(stageIndex);
             boardView.ShowLine(null);
-            SetArrowTag("disabled");
+            HideArrows();
             if (ui != null) ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, sheepBefore, Board.Rules.TargetSheep, false);
             playback = StartCoroutine(PlayEvents(new List<GameEvent>(Board.Events), move));
         }
@@ -535,7 +560,7 @@ namespace Sheepft.Game
                 ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, Board.SheepOnGrass(), Board.Rules.TargetSheep, cannotWin);
                 ui.ShowResult(Board.Result, Stars(), stageIndex < stageCount - 1);
             }
-            SetArrowTag(Board.Result == GameResult.InProgress ? "normal" : "disabled");
+            HideArrows();
         }
 
         /// <summary>쓴 턴 수로 정하는 별 수. 별 1개는 제한 턴 이내다. 구현 계획 2절.</summary>
@@ -547,12 +572,11 @@ namespace Sheepft.Game
             return 1;
         }
 
-        private void SetArrowTag(string tag)
+        /// <summary>화살표를 모두 숨긴다. 다음 프레임에 마우스가 올라가 있는 것만 다시 보인다. X자는 그대로 둔다.</summary>
+        private void HideArrows()
         {
-            var sheet = catalog.Get("shift_arrow");
-            if (sheet == null) return;
             foreach (var arrow in arrows)
-                if (arrow.Renderer != null) arrow.Renderer.sprite = sheet.TagFrame(tag);
+                if (arrow.Open && arrow.Renderer != null) arrow.Renderer.enabled = false;
         }
     }
 }

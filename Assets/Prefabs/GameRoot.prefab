@@ -584,7 +584,8 @@ MonoBehaviour:
     - {fileID: 2151546396633758946, guid: 74689a5684403fc4489de946f0ad0587, type: 3}
     - {fileID: -5867040471912830722, guid: 74689a5684403fc4489de946f0ad0587, type: 3}
     - {fileID: 3347467401213595723, guid: 74689a5684403fc4489de946f0ad0587, type: 3}
-    durationsMs: 640000006400000064000000
+    - {fileID: 2878244679212476403, guid: 74689a5684403fc4489de946f0ad0587, type: 3}
+    durationsMs: 64000000640000006400000064000000
     tags:
     - name: normal
       from: 0
@@ -595,6 +596,9 @@ MonoBehaviour:
     - name: disabled
       from: 2
       to: 2
+    - name: blocked
+      from: 3
+      to: 3
   - name: status_icons
     frames:
     - {fileID: 6634508018546281265, guid: 2a8ea8a59fc70584bac206a279796a45, type: 3}

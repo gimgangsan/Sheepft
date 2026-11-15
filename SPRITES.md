@@ -62,7 +62,7 @@ README의 이번 버전 범위를 그래픽으로 옮기기 위해 만들어야 
 | 파일 | 크기 | 태그 | 내용 |
 | --- | --- | --- | --- |
 | `status_icons.aseprite` | 16×16 | `wet`, `burned`, `stunned`, `eating`, `found`, `smell`, `full` | 동물 머리 위 상태 아이콘. 각 태그 1–4프레임 루프. 물방울, 화상은 아이콘을 거의 채우는 큰 불꽃(연기보다 불이 먼저 읽히게), 도는 별, 먹는 표시, 느낌표, 냄새 물결, 배부름 표시 등 |
-| `shift_arrow.aseprite` | 32×32 | `normal`, `hover`, `disabled` | 행·열 끝의 밀기 화살표. 오른쪽 방향만 그리고 Unity에서 회전. `disabled`는 shift할 수 없는 줄 |
+| `shift_arrow.aseprite` | 32×32 | `normal`, `hover`, `disabled`, `blocked` | 행·열 끝의 밀기 표시. 화살표는 오른쪽 방향만 그리고 Unity에서 회전. 게임은 마우스를 올린 끝에만 `hover` 화살표를 보인다. `blocked`는 shift 포인트가 없는 줄 끝에 늘 보이는 X자(빨강: 밝음 `#ef4a2a` / 바탕 `#d23c1e` / 그늘 `#a52f2c`, 가운데 12×12, 돌리지 않음). `normal`·`disabled`는 지금 쓰지 않는다 |
 | `line_highlight.aseprite` | 32×32 | `idle` | 마우스를 올린 줄의 칸마다 깔리는 표시. 칸 테두리 위주로 그려서 아래 지형이 보이게 |
 | `button_undo.aseprite` | 32×32 | `normal`, `hover`, `pressed` | undo 버튼 |
 | `button_restart.aseprite` | 32×32 | `normal`, `hover`, `pressed` | 재시작 버튼 |

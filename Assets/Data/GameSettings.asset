@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c553e7a116573c44e97f5b0306ce9d37, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.GameSettings
-  moveSeconds: 0.18
-  stepPauseSeconds: 0.1
+  moveSeconds: 0.36
+  stepPauseSeconds: 0.28
   moveCurve:
     serializedVersion: 2
     m_Curve:
@@ -40,7 +40,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   stackSpacingPixels: 6
   packOffsetPixels: {x: -4, y: 3}
-  statusIconHeightPixels: 26
+  statusIconHeightPixels: 18
   cameraMargin: 0.25
   backgroundColor: {r: 0.16862746, g: 0.14117648, b: 0.2, a: 1}
   holeColor: {r: 0.101960786, g: 0.08235294, b: 0.1254902, a: 1}

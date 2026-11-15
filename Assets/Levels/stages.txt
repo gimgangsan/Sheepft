@@ -13,7 +13,7 @@
 
 # End to End  shift: R0:R, R1:RL, R2:RL, C0:D, C1:UD, C2:UD, C3:UD  제한 7턴  목표 양 1
 # 풀이: R1:R, C3:U, R0:R
-@desc A sheep pushed off the end of a line comes back in at the other end. A line with one arrow can only be pushed that way.
+@desc A sheep pushed off the end of a line comes back in at the other end. A line with an X at one end can only be pushed toward the X.
 @intent SheepWrap
 @stars 3 4
 g   .   .   .
