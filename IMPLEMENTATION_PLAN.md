@@ -436,7 +436,7 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 | 11-1. 저장 | `SaveData`(PlayerPrefs). 클리어하면 별과 열린 스테이지를 기록. 지금의 `cleared`(실행 중에만 남음)를 대신한다 |
 | 11-2. 타이틀·스테이지 선택 | `MenuController`(지금 화면, 카메라 이동), 메뉴 줄 하나를 밀고 그리는 `MenuRow`, 글자 hover로 화살표 보이기, 스테이지 줄 흐르기, 풀에 들어가면 스테이지 시작, `Esc`·메뉴 버튼으로 돌아오기. 꿈 풍선은 이름과 별만 |
 | 11-3. 꿈 풍선 미리보기 | `minimap_tiles`로 맵을 작게 그린다 |
-| 11-4. 설정 | 설정 줄 3개, 값 저장, 이동 속도 배율 |
+| 11-4. 설정 (2026-11-16 구현) | 설정 줄 3개, 값 저장, 이동 속도 배율. 줄 위치는 `menuSettingsRowTopLeft`(첫 줄 맨 왼쪽 칸, 기본 (96, 56))와 `menuSettingsRowSpacing`(기본 56). 오브젝트는 음악 `setting_props:music`, 효과음 `setting_props:sound`, 이동 속도는 전용 그림이 없어 임시로 `horse:idle`(`MenuController`의 `speedProp`). 음악·효과음 값은 저장만 하고, 소리를 붙이는 11-5에서 쓴다 |
 | 11-5. 다듬기 | 화면 전환 타이밍, 풀에 들어갈 때 `happy`, 소리 |
 
 - 메뉴가 다 될 때까지 지금의 Canvas 레벨 선택 화면을 남겨 둔다.

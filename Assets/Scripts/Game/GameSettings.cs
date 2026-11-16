@@ -61,6 +61,12 @@ namespace Sheepft.Game
         [Tooltip("설정 화면에서 양이 내려앉는 땅 칸. 왼쪽 칸에 ▶(아래 Back). 타이틀 칸과 같은 높이로 둔다.")]
         public Vector2 menuSettingsCell = new Vector2(576f, 200f);
 
+        [Tooltip("설정 화면의 첫 설정 줄(음악)의 맨 왼쪽 칸. 줄은 6칸이고 양 끝 바깥 칸에 화살표가 있다. 이름과 값은 줄 바로 위에 적는다.")]
+        public Vector2 menuSettingsRowTopLeft = new Vector2(96f, 56f);
+
+        [Tooltip("설정 줄 사이의 세로 간격(픽셀). 음악, 효과음, 이동 속도 순으로 아래로 쌓인다.")]
+        public float menuSettingsRowSpacing = 56f;
+
         [Tooltip("스테이지 선택에서 고른 줄의 땅 칸. 풀은 그 오른쪽 칸이고, 다른 스테이지 줄은 위아래로 32px씩 쌓인다. " +
                  "타이틀 칸과 같은 높이로 두어 양이 빈칸을 건너듯 같은 줄로 넘어가게 한다. 위아래 2줄이면 y는 96–232여야 화면에 들어간다.")]
         public Vector2 menuStageCell = new Vector2(1400f, 200f);

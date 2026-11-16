@@ -11,6 +11,54 @@ namespace Sheepft.Game
         private const string UnlockedKey = "sheepft.unlocked";
         private const string LastStageKey = "sheepft.lastStage";
         private const string StarsKeyPrefix = "sheepft.stars.";
+        private const string MusicKey = "sheepft.music";
+        private const string SoundKey = "sheepft.sound";
+        private const string SpeedKey = "sheepft.speed";
+
+        // ── 설정 (구현 계획 11절) ──
+
+        /// <summary>음악·효과음 크기 단계 수(0–5).</summary>
+        public const int VolumeSteps = 6;
+
+        /// <summary>이동 속도 단계별 시간 배율: 매우 느림, 느림, 보통, 빠름.</summary>
+        public static readonly float[] SpeedScales = { 2f, 1.5f, 1f, 0.6f };
+        public static readonly string[] SpeedNames = { "Very Slow", "Slow", "Normal", "Fast" };
+        public const int DefaultSpeed = 2;
+
+        private static int speedCache = -1;
+
+        /// <summary>음악 크기 0–5. 기본 3.</summary>
+        public static int Music
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt(MusicKey, 3), 0, VolumeSteps - 1);
+            set { PlayerPrefs.SetInt(MusicKey, value); PlayerPrefs.Save(); }
+        }
+
+        /// <summary>효과음 크기 0–5. 기본 3.</summary>
+        public static int Sound
+        {
+            get => Mathf.Clamp(PlayerPrefs.GetInt(SoundKey, 3), 0, VolumeSteps - 1);
+            set { PlayerPrefs.SetInt(SoundKey, value); PlayerPrefs.Save(); }
+        }
+
+        /// <summary>이동 속도 단계 0–3(SpeedScales의 번호). 기본 2(보통).</summary>
+        public static int Speed
+        {
+            get
+            {
+                if (speedCache < 0) speedCache = Mathf.Clamp(PlayerPrefs.GetInt(SpeedKey, DefaultSpeed), 0, SpeedScales.Length - 1);
+                return speedCache;
+            }
+            set
+            {
+                speedCache = Mathf.Clamp(value, 0, SpeedScales.Length - 1);
+                PlayerPrefs.SetInt(SpeedKey, speedCache);
+                PlayerPrefs.Save();
+            }
+        }
+
+        /// <summary>연출 시간(이동, 쉬는 시간, 염소 박치기)에 곱하는 배율.</summary>
+        public static float SpeedScale => SpeedScales[Speed];
 
         /// <summary>열린 스테이지 수. 처음에는 1번 하나만 열려 있다.</summary>
         public static int Unlocked(int stageCount)
@@ -53,6 +101,10 @@ namespace Sheepft.Game
         {
             PlayerPrefs.DeleteKey(UnlockedKey);
             PlayerPrefs.DeleteKey(LastStageKey);
+            PlayerPrefs.DeleteKey(MusicKey);
+            PlayerPrefs.DeleteKey(SoundKey);
+            PlayerPrefs.DeleteKey(SpeedKey);
+            speedCache = -1;
             for (int i = 0; i < 100; i++) PlayerPrefs.DeleteKey(StarsKeyPrefix + i);
             PlayerPrefs.Save();
             Debug.Log("[Sheepft] 저장 기록을 지웠다.");

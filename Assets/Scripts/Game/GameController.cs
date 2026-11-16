@@ -410,7 +410,7 @@ namespace Sheepft.Game
                 // 말이 돌아섰으면 등에 탄 것도 반대쪽 등으로 옮긴다. 아직 모두 출발 칸에 있으므로 다시 배치해도 된다.
                 boardView.Layout();
 
-                float moveSeconds = Settings.moveSeconds;
+                float moveSeconds = Settings.moveSeconds * SaveData.SpeedScale;
                 for (float t = 0f; t < moveSeconds; t += Time.deltaTime)
                 {
                     float k = Mathf.Clamp01(Settings.moveCurve.Evaluate(t / moveSeconds));
@@ -478,7 +478,7 @@ namespace Sheepft.Game
             if (other)
             {
                 boardView.Layout();
-                yield return new WaitForSeconds(Settings.stepPauseSeconds);
+                yield return new WaitForSeconds(Settings.stepPauseSeconds * SaveData.SpeedScale);
             }
         }
 
@@ -512,15 +512,18 @@ namespace Sheepft.Game
                 if (dir == Dir.Left || dir == Dir.Right) goat.SetFlip(dir == Dir.Left);
                 goat.PlayAction("attack", true);
 
+                // 이동 속도 설정(SaveData.SpeedScale)이 모든 시간에 곱해진다.
+                float scale = SaveData.SpeedScale;
+                float moveSeconds = s.moveSeconds * scale, returnSeconds = s.goatReturnSeconds * scale;
                 Vector3 lunge = DirVector(dir) * s.goatLungeDistance;
-                float hit = s.goatLungeSeconds;
-                float end = Mathf.Max(hit + s.goatReturnSeconds, hit + (pushed.Count > 0 ? s.moveSeconds : 0f));
+                float hit = s.goatLungeSeconds * scale;
+                float end = Mathf.Max(hit + returnSeconds, hit + (pushed.Count > 0 ? moveSeconds : 0f));
                 bool impact = false;
                 for (float t = 0f; t < end; t += Time.deltaTime)
                 {
                     // 나갈 때는 점점 빠르게(가속), 돌아올 때는 일정하게 빠르게.
                     float offset = t < hit ? Mathf.Pow(t / hit, 2f)
-                        : Mathf.Clamp01(1f - (t - hit) / s.goatReturnSeconds);
+                        : Mathf.Clamp01(1f - (t - hit) / returnSeconds);
                     goat.Place(home + lunge * offset);
 
                     if (t >= hit)
@@ -530,7 +533,7 @@ namespace Sheepft.Game
                             impact = true;
                             boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
                         }
-                        float k = Mathf.Clamp01(s.moveCurve.Evaluate((t - hit) / s.moveSeconds));
+                        float k = Mathf.Clamp01(s.moveCurve.Evaluate((t - hit) / moveSeconds));
                         foreach (var m in pushed) PlaceMoving(m, move, k);
                     }
                     yield return null;
@@ -542,7 +545,7 @@ namespace Sheepft.Game
                 foreach (var m in pushed) EndMove(m, "walk");
                 boardView.Layout();
                 home = goat.BasePosition;
-                if (s.goatAttackGapSeconds > 0f) yield return new WaitForSeconds(s.goatAttackGapSeconds);
+                if (s.goatAttackGapSeconds > 0f) yield return new WaitForSeconds(s.goatAttackGapSeconds * scale);
             }
         }
 

@@ -35,6 +35,15 @@ namespace Sheepft.Game
         public string playText = "Play";
         public string settingText = "Setting";
         public string backText = "Back";
+        public string musicText = "Music";
+        public string soundText = "Sound";
+        public string speedText = "Speed";
+
+        [Header("설정 줄의 오브젝트 (스프라이트 이름과 태그)")]
+        public string musicProp = "setting_props:music";
+        public string soundProp = "setting_props:sound";
+        [Tooltip("이동 속도 줄의 오브젝트. 전용 그림이 생기면 바꾼다.")]
+        public string speedProp = "horse:idle";
         public Color labelColor = new Color32(0xf4, 0xf0, 0xe8, 0xff);
         [Tooltip("깬 스테이지의 번호 색(불꽃 노랑).")]
         public Color clearedLabelColor = new Color32(0xfc, 0xc9, 0x4b, 0xff);
@@ -55,6 +64,27 @@ namespace Sheepft.Game
             public readonly List<Vector2> Line = new List<Vector2>();
             public GameObject Object;
             public SpriteRenderer Renderer;
+        }
+
+        /// <summary>
+        /// 설정 줄 하나. 6칸 줄에서 오브젝트가 있는 칸이 값이다.
+        /// 음악·효과음은 끝에서 순환하고, 이동 속도는 양 끝 칸이 돌이라 끝에서 멈춘다.
+        /// </summary>
+        private sealed class SettingRow
+        {
+            public Vector2 TopLeft;
+            /// <summary>값의 개수. 값 v는 TopLeft에서 (v + FirstCell)번째 칸이다.</summary>
+            public int Count;
+            public int FirstCell;
+            public bool Wrap;
+            public int Value;
+            public Action<int> Save;
+            public Func<int, string> Text;
+            public string Name;
+            public SpriteRenderer Prop;
+            public TextMeshPro Label;
+
+            public Vector2 Cell(int value) => TopLeft + new Vector2(32f * (value + FirstCell), 0f);
         }
 
         private sealed class Row
@@ -142,8 +172,26 @@ namespace Sheepft.Game
             titleArrows.Add(NewArrow(TitleCell + new Vector2(-32f, 0f), Dir.Right, () => StartCoroutine(GoAcross(MenuScreen.StageSelect)), playText, TitleCell));
             titleArrows.Add(NewArrow(TitleCell + new Vector2(32f, 0f), Dir.Left, () => StartCoroutine(GoAcross(MenuScreen.Settings)), settingText, TitleCell));
 
-            // 설정: 돌아가는 칸의 ▶ 아래 Back. 설정 줄은 11-4에서 더한다.
+            // 설정: 돌아가는 칸의 ▶ 아래 Back, 그리고 설정 줄 3개.
             settingsArrows.Add(NewArrow(SettingsCell + new Vector2(-32f, 0f), Dir.Right, () => StartCoroutine(GoAcross(MenuScreen.Title)), backText, SettingsCell));
+            var top = Settings.menuSettingsRowTopLeft;
+            float gap = Settings.menuSettingsRowSpacing;
+            AddSettingRow(new SettingRow
+            {
+                Name = musicText, TopLeft = top, Count = SaveData.VolumeSteps, FirstCell = 0, Wrap = true,
+                Value = SaveData.Music, Save = v => SaveData.Music = v, Text = v => v.ToString()
+            }, musicProp);
+            AddSettingRow(new SettingRow
+            {
+                Name = soundText, TopLeft = top + new Vector2(0f, gap), Count = SaveData.VolumeSteps, FirstCell = 0, Wrap = true,
+                Value = SaveData.Sound, Save = v => SaveData.Sound = v, Text = v => v.ToString()
+            }, soundProp);
+            // 이동 속도: 돌, 매우 느림, 느림, 보통, 빠름, 돌.
+            AddSettingRow(new SettingRow
+            {
+                Name = speedText, TopLeft = top + new Vector2(0f, gap * 2f), Count = SaveData.SpeedScales.Length, FirstCell = 1, Wrap = false,
+                Value = SaveData.Speed, Save = v => SaveData.Speed = v, Text = v => SaveData.SpeedNames[v]
+            }, speedProp);
 
             // 스테이지 선택: 고른 줄의 ▶(풀로 들어가 시작), ◀(타이틀로), 땅 열의 위아래 끝(BuildRows가 자리를 정한다).
             var grassCell = StageCell + new Vector2(32f, 0f);
@@ -300,7 +348,7 @@ namespace Sheepft.Game
             busy = true;
             Vector3 start = CellBase(StageCell);
             if (sheep != null) sheep.SetFlip(false);
-            float seconds = Settings.moveSeconds;
+            float seconds = Settings.moveSeconds * SaveData.SpeedScale;
 
             if (selected >= unlocked)
             {
@@ -343,7 +391,7 @@ namespace Sheepft.Game
         private IEnumerator Scroll(int step)
         {
             busy = true;
-            float seconds = Settings.moveSeconds;
+            float seconds = Settings.moveSeconds * SaveData.SpeedScale;
             for (float t = 0f; t < seconds; t += Time.deltaTime)
             {
                 float k = Mathf.Clamp01(Settings.moveCurve.Evaluate(t / seconds));
@@ -352,6 +400,114 @@ namespace Sheepft.Game
             }
             selected = Mod(selected + step, entries);
             BuildRows();
+            busy = false;
+        }
+
+        // ── 설정 줄 ──
+
+        /// <summary>설정 줄 하나를 그린다: 땅 칸(막는 줄은 양 끝 돌), 오브젝트, 위쪽 이름과 값, 양 끝 바깥의 화살표.</summary>
+        private void AddSettingRow(SettingRow row, string prop)
+        {
+            int cells = row.Count + row.FirstCell * 2;
+            var line = new List<Vector2>();
+            for (int i = 0; i < cells; i++)
+            {
+                var cell = row.TopLeft + new Vector2(32f * i, 0f);
+                bool stone = !row.Wrap && (i < row.FirstCell || i >= row.FirstCell + row.Count);
+                PlaceTile("ground", cell, 0);
+                if (stone) PlaceTile("stone", cell, 5);
+                line.Add(cell);
+            }
+
+            row.Prop = BoardView.NewRenderer(layoutRoot, "setting " + row.Name, 10);
+            row.Prop.sprite = PropSprite(prop);
+            row.Prop.transform.position = CellBase(row.Cell(row.Value));
+
+            row.Label = NewLabel(layoutRoot, "", TextAlignmentOptions.Left, new Vector2(0f, 0f));
+            row.Label.transform.position = Px(row.TopLeft.x, row.TopLeft.y - 2f);
+            UpdateSettingLabel(row);
+
+            var left = NewArrow(row.TopLeft + new Vector2(-32f, 0f), Dir.Right, () => StartCoroutine(ShiftSetting(row, 1)), null, line.ToArray());
+            var right = NewArrow(row.TopLeft + new Vector2(32f * cells, 0f), Dir.Left, () => StartCoroutine(ShiftSetting(row, -1)), null, line.ToArray());
+            settingsArrows.Add(left);
+            settingsArrows.Add(right);
+        }
+
+        private void UpdateSettingLabel(SettingRow row)
+        {
+            if (row.Label != null) row.Label.text = row.Name + "  " + row.Text(row.Value);
+        }
+
+        /// <summary>"시트:태그" 형식의 이름으로 그림 한 장을 고른다. 태그가 없으면 첫 프레임.</summary>
+        private Sprite PropSprite(string prop)
+        {
+            var parts = prop.Split(':');
+            var sheet = catalog.Get(parts[0]);
+            if (sheet == null) return null;
+            return parts.Length > 1 ? sheet.TagFrame(parts[1]) : sheet.Frame(0);
+        }
+
+        /// <summary>
+        /// 설정 줄을 민다. step이 1이면 오른쪽, -1이면 왼쪽.
+        /// 순환하는 줄은 끝에서 한 칸 나가며 사라지고 반대쪽 끝으로 들어온다. 돌로 막힌 줄은 끝에서 움찔하고 멈춘다.
+        /// </summary>
+        private IEnumerator ShiftSetting(SettingRow row, int step)
+        {
+            busy = true;
+            float seconds = Settings.moveSeconds * SaveData.SpeedScale;
+            int from = row.Value, to = from + step;
+            Vector3 start = CellBase(row.Cell(from));
+            Vector3 dir = step > 0 ? Vector3.right : Vector3.left;
+            var t0 = row.Prop.transform;
+
+            if (to < 0 || to >= row.Count)
+            {
+                if (!row.Wrap)
+                {
+                    for (float t = 0f; t < seconds; t += Time.deltaTime)
+                    {
+                        t0.position = start + dir * (Mathf.Sin(Mathf.Clamp01(t / seconds) * Mathf.PI) * 0.2f);
+                        yield return null;
+                    }
+                    t0.position = start;
+                    busy = false;
+                    yield break;
+                }
+
+                // 순환: 진행 방향으로 한 칸 나가며 사라지고, 반대쪽 끝의 한 칸 바깥에서 나타나며 들어온다.
+                to = Mod(to, row.Count);
+                Vector3 end = CellBase(row.Cell(to));
+                for (float t = 0f; t < seconds; t += Time.deltaTime)
+                {
+                    float k = Mathf.Clamp01(Settings.moveCurve.Evaluate(t / seconds));
+                    if (k < 0.5f)
+                    {
+                        t0.position = Vector3.Lerp(start, start + dir, k);
+                        row.Prop.color = new Color(1f, 1f, 1f, 1f - k * 2f);
+                    }
+                    else
+                    {
+                        t0.position = Vector3.Lerp(end - dir, end, k);
+                        row.Prop.color = new Color(1f, 1f, 1f, k * 2f - 1f);
+                    }
+                    yield return null;
+                }
+                row.Prop.color = Color.white;
+            }
+            else
+            {
+                Vector3 end = CellBase(row.Cell(to));
+                for (float t = 0f; t < seconds; t += Time.deltaTime)
+                {
+                    t0.position = Vector3.Lerp(start, end, Mathf.Clamp01(Settings.moveCurve.Evaluate(t / seconds)));
+                    yield return null;
+                }
+            }
+
+            row.Value = to;
+            t0.position = CellBase(row.Cell(to));
+            row.Save(to);
+            UpdateSettingLabel(row);
             busy = false;
         }
 
