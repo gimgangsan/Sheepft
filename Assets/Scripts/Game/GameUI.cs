@@ -82,6 +82,13 @@ namespace Sheepft.Game
             if (button != null) button.onClick.AddListener(action);
         }
 
+        /// <summary>게임 화면 UI 전체를 보이거나 숨긴다. 메뉴가 열려 있는 동안 숨긴다.</summary>
+        public void SetVisible(bool visible)
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas != null) canvas.enabled = visible;
+        }
+
         // ── 내용 ──
 
         /// <summary>스테이지 번호(1부터)와 이름, 설명.</summary>

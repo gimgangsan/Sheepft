@@ -18,7 +18,10 @@ namespace Sheepft.Game
     {
         private const int ArrowOrder = 1000;
 
-        /// <summary>처음 열 스테이지. 0부터 센다.</summary>
+        [Tooltip("켜 두면 타이틀 메뉴부터 시작한다. 끄면 Start Stage를 바로 연다(개발용).")]
+        public bool openMenuOnStart = true;
+
+        /// <summary>메뉴 없이 바로 열 스테이지. 0부터 센다.</summary>
         public int startStage;
 
         [Tooltip("씬의 UI. 비워 두면 씬에서 찾는다.")]
@@ -49,8 +52,7 @@ namespace Sheepft.Game
         private Coroutine playback;
         private float aspect;
 
-        /// <summary>이번 실행에서 클리어한 스테이지(0부터). 저장하지 않는다.</summary>
-        private readonly HashSet<int> cleared = new HashSet<int>();
+        private MenuController menu;
 
         private Board Board => session.Board;
 
@@ -77,7 +79,7 @@ namespace Sheepft.Game
                 ui.UndoClicked += Undo;
                 ui.RestartClicked += Restart;
                 ui.NextClicked += NextStage;
-                ui.LevelSelectClicked += OpenLevelSelect;
+                ui.LevelSelectClicked += OpenMenuFromGame;
                 ui.LevelChosen += LoadStage;
             }
             else
@@ -86,7 +88,15 @@ namespace Sheepft.Game
             }
 
             stageCount = LevelParser.ParseAll(catalog.stages.text).Count;
-            LoadStage(Mathf.Clamp(startStage, 0, stageCount - 1));
+
+            // 메뉴는 같은 씬의 먼 자리에 있고, 카메라를 옮겨 오간다(구현 계획 11절).
+            menu = NewChild("menu").gameObject.AddComponent<MenuController>();
+            var font = ui != null && ui.titleText != null ? ui.titleText.font : null;
+            menu.Init(catalog, prefabs, cam, font, stageCount);
+            menu.StageChosen += LoadStage;
+
+            if (openMenuOnStart) OpenMenu(MenuScreen.Title, SaveData.LastStage(stageCount));
+            else LoadStage(Mathf.Clamp(startStage, 0, stageCount - 1));
         }
 
         private Transform NewChild(string childName)
@@ -99,7 +109,9 @@ namespace Sheepft.Game
         private void LoadStage(int index)
         {
             StopPlayback();
+            CloseMenu();
             stageIndex = index;
+            SaveData.SetLastStage(index);
             // 맵은 진행하면서 바뀌므로, 스테이지를 열 때마다 파일에서 새로 읽는다.
             session = new GameSession(LevelParser.ParseAll(catalog.stages.text)[index]);
             boardView.Build(catalog, prefabs, Board);
@@ -197,6 +209,8 @@ namespace Sheepft.Game
 
         private void Update()
         {
+            // 메뉴가 열려 있으면 메뉴가 입력을 받는다.
+            if (menu != null && menu.IsOpen) return;
             if (session == null) return;
             if (cam != null && !Mathf.Approximately(cam.aspect, aspect)) FitCamera();
 
@@ -221,6 +235,8 @@ namespace Sheepft.Game
 
             if (keyboard != null)
             {
+                // Esc: 메뉴의 스테이지 선택 화면으로. 양은 하던 스테이지 줄에 놓인다.
+                if (keyboard.escapeKey.wasPressedThisFrame) { OpenMenuFromGame(); return; }
                 // 개발용 키: 이전·다음 스테이지.
                 if (keyboard.leftBracketKey.wasPressedThisFrame && stageIndex > 0) { LoadStage(stageIndex - 1); return; }
                 if (keyboard.rightBracketKey.wasPressedThisFrame && stageIndex < stageCount - 1) { LoadStage(stageIndex + 1); return; }
@@ -272,7 +288,7 @@ namespace Sheepft.Game
             // 풀 위의 양 수는 재생이 끝난 뒤에 바꾼다. 남은 턴만 바로 줄인다.
             int sheepBefore = Board.SheepOnGrass();
             if (!session.Play(move)) return;
-            if (Board.Result == GameResult.Won) cleared.Add(stageIndex);
+            if (Board.Result == GameResult.Won) SaveData.RecordClear(stageIndex, Stars(), stageCount);
             boardView.ShowLine(null);
             HideArrows();
             if (ui != null) ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, sheepBefore, Board.Rules.TargetSheep, false);
@@ -300,10 +316,34 @@ namespace Sheepft.Game
             if (stageIndex < stageCount - 1) LoadStage(stageIndex + 1);
         }
 
-        private void OpenLevelSelect()
+        // ── 메뉴 ──
+
+        /// <summary>게임 중 Esc나 레벨 선택 버튼: 메뉴의 스테이지 선택 화면, 양은 하던 스테이지 줄.</summary>
+        private void OpenMenuFromGame()
         {
             if (playback != null) FinishPlayback();
-            if (ui != null) ui.OpenLevelSelect(stageCount, stageIndex, cleared);
+            OpenMenu(MenuScreen.StageSelect, stageIndex);
+        }
+
+        private void OpenMenu(MenuScreen screen, int stage)
+        {
+            StopPlayback();
+            if (boardView != null) boardView.ShowLine(null);
+            HideArrows();
+            if (ui != null)
+            {
+                ui.CloseLevelSelect();
+                ui.SetVisible(false);
+            }
+            menu.Open(screen, stage);
+        }
+
+        private void CloseMenu()
+        {
+            if (menu == null || !menu.IsOpen) return;
+            menu.Close();
+            if (ui != null) ui.SetVisible(true);
+            if (cam != null) cam.backgroundColor = Settings.backgroundColor;
         }
 
         // ── 이벤트 재생 ──

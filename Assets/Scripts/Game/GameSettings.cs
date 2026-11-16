@@ -48,6 +48,35 @@ namespace Sheepft.Game
         [Tooltip("화면 가장자리와 맵·UI 사이의 여백(칸).")]
         public float cameraMargin = 0.25f;
 
+        [Header("메뉴 배치 (메뉴 그림 1920×360의 픽셀, 왼쪽 위가 0, 칸은 그 칸의 왼쪽 위)")]
+        [Tooltip("로고 캔버스의 왼쪽 위.")]
+        public Vector2 menuLogoTopLeft = new Vector2(800f, 40f);
+
+        [Tooltip("title_logo.aseprite의 캔버스 크기.")]
+        public Vector2 menuLogoCanvasSize = new Vector2(320f, 96f);
+
+        [Tooltip("타이틀에서 양이 서 있는 땅 칸. 왼쪽 칸에 ▶(아래 Play), 오른쪽 칸에 ◀(아래 Setting).")]
+        public Vector2 menuTitleCell = new Vector2(944f, 200f);
+
+        [Tooltip("설정 화면에서 양이 내려앉는 땅 칸. 왼쪽 칸에 ▶(아래 Back). 타이틀 칸과 같은 높이로 둔다.")]
+        public Vector2 menuSettingsCell = new Vector2(576f, 200f);
+
+        [Tooltip("스테이지 선택에서 고른 줄의 땅 칸. 풀은 그 오른쪽 칸이고, 다른 스테이지 줄은 위아래로 32px씩 쌓인다. " +
+                 "타이틀 칸과 같은 높이로 두어 양이 빈칸을 건너듯 같은 줄로 넘어가게 한다. 위아래 2줄이면 y는 96–232여야 화면에 들어간다.")]
+        public Vector2 menuStageCell = new Vector2(1400f, 200f);
+
+        [Tooltip("고른 줄의 위와 아래에 각각 보여 줄 스테이지 줄 수.")]
+        [Min(0)] public int menuStageRowsAround = 2;
+
+        [Tooltip("메뉴 글자 크기(월드 공간 TextMeshPro).")]
+        [Min(0.1f)] public float menuLabelFontSize = 4f;
+
+        [Tooltip("옆 화면으로 넘어가는 시간(초). 양은 이 동안 빈칸을 건너뛴다.")]
+        [Min(0.01f)] public float menuPanSeconds = 0.6f;
+
+        [Tooltip("양이 풀에 들어간 뒤 스테이지를 열기까지 기다리는 시간(초).")]
+        [Min(0f)] public float menuEnterDelaySeconds = 0.5f;
+
         [Header("색")]
         public Color backgroundColor = new Color32(0x2b, 0x24, 0x33, 0xff);
 

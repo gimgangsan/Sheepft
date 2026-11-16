@@ -38,9 +38,23 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  goatLungeDistance: 0.3
+  goatLungeSeconds: 0.09
+  goatReturnSeconds: 0.06
+  goatAttackGapSeconds: 0.05
   stackSpacingPixels: 6
   packOffsetPixels: {x: -4, y: 3}
+  riderOffsetPixels: {x: -5, y: 13}
   statusIconHeightPixels: 18
   cameraMargin: 0.25
+  menuLogoTopLeft: {x: 800, y: 40}
+  menuLogoCanvasSize: {x: 320, y: 96}
+  menuTitleCell: {x: 944, y: 200}
+  menuSettingsCell: {x: 576, y: 200}
+  menuStageCell: {x: 1400, y: 200}
+  menuStageRowsAround: 2
+  menuLabelFontSize: 4
+  menuPanSeconds: 0.6
+  menuEnterDelaySeconds: 0.5
   backgroundColor: {r: 0.16862746, g: 0.14117648, b: 0.2, a: 1}
   holeColor: {r: 0.101960786, g: 0.08235294, b: 0.1254902, a: 1}
