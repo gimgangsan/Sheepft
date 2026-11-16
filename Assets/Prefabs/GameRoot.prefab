@@ -556,11 +556,21 @@ MonoBehaviour:
     - name: digits
       from: 0
       to: 9
+  - name: dream_bubble
+    frames:
+    - {fileID: -177413713829830818, guid: 3a4f03abcd2d12742a56e0e63e9b3322, type: 3}
+    durationsMs: 64000000
+    tags:
+    - name: idle
+      from: 0
+      to: 0
   - name: hud_icons
     frames:
     - {fileID: -7921520735318275306, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
     - {fileID: 8157515611821697221, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
-    durationsMs: 6400000064000000
+    - {fileID: 3926579576576335896, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
+    - {fileID: -1232231788577640769, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
+    durationsMs: 64000000640000006400000064000000
     tags:
     - name: turn
       from: 0
@@ -568,6 +578,12 @@ MonoBehaviour:
     - name: goal_sheep
       from: 1
       to: 1
+    - name: star
+      from: 2
+      to: 2
+    - name: star_empty
+      from: 3
+      to: 3
   - name: line_highlight
     frames:
     - {fileID: 7268155889077081627, guid: f0edc75b593931249848fe60a9a4a7c9, type: 3}
@@ -579,6 +595,49 @@ MonoBehaviour:
     - name: idle
       from: 0
       to: 3
+  - name: menu_background
+    frames:
+    - {fileID: 7172478002912490297, guid: 618acb2008724ca4e9724c513c66bf4e, type: 3}
+    durationsMs: 64000000
+    tags:
+    - name: idle
+      from: 0
+      to: 0
+  - name: minimap_tiles
+    frames:
+    - {fileID: 4778772265837026621, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -2212708054899546270, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: 3383355918400950589, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -3692041086881409633, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: 3238019736963030656, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -2656282638979150381, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -3970231791075952040, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: 739628213523415903, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -5981725439221834701, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: 7480690628761878962, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -4847830940700487935, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -2126762267419105603, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -3125418018985686144, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -5547795964256936571, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: 8995677827131038323, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    - {fileID: -2638781297040574664, guid: 0877b385de2bff94193dc822ac6847f4, type: 3}
+    durationsMs: 64000000640000006400000064000000640000006400000064000000640000006400000064000000640000006400000064000000640000006400000064000000
+    tags:
+    - name: tiles
+      from: 0
+      to: 15
+  - name: setting_props
+    frames:
+    - {fileID: -3765470097018562476, guid: 7a6268a4102b4f5499a9df4c177c9dc9, type: 3}
+    - {fileID: 6670381264006180208, guid: 7a6268a4102b4f5499a9df4c177c9dc9, type: 3}
+    durationsMs: 6400000064000000
+    tags:
+    - name: music
+      from: 0
+      to: 0
+    - name: sound
+      from: 1
+      to: 1
   - name: shift_arrow
     frames:
     - {fileID: 2151546396633758946, guid: 74689a5684403fc4489de946f0ad0587, type: 3}
@@ -599,6 +658,19 @@ MonoBehaviour:
     - name: blocked
       from: 3
       to: 3
+  - name: sleep_z
+    frames:
+    - {fileID: 3938655442555136131, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    - {fileID: -3450935806071071791, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    - {fileID: 1161103102630204671, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    - {fileID: -435130310032657436, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    - {fileID: -3730776164433751954, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    - {fileID: -4357246337206449109, guid: 0a830db3a3ec79f479bb16739b219f87, type: 3}
+    durationsMs: fa000000fa000000fa000000fa000000fa000000fa000000
+    tags:
+    - name: idle
+      from: 0
+      to: 5
   - name: status_icons
     frames:
     - {fileID: 6634508018546281265, guid: 2a8ea8a59fc70584bac206a279796a45, type: 3}
@@ -643,6 +715,14 @@ MonoBehaviour:
     - name: full
       from: 17
       to: 18
+  - name: title_logo
+    frames:
+    - {fileID: 3265456846710077229, guid: 094e075453f4dd844aea5f210e387d9b, type: 3}
+    durationsMs: 64000000
+    tags:
+    - name: idle
+      from: 0
+      to: 0
 --- !u!114 &7431189839788926726
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -32,7 +32,8 @@ namespace Sheepft.Tests
         public void Catalog_EverySheetHasItsFirstFrame()
         {
             var catalog = Load();
-            Assert.AreEqual(36, catalog.sheets.Count);
+            // SPRITES.md "개수"의 합계와 같다(메뉴 화면 6개 포함).
+            Assert.AreEqual(42, catalog.sheets.Count);
             foreach (var sheet in catalog.sheets)
             {
                 Assert.Greater(sheet.frames.Length, 0, sheet.name);

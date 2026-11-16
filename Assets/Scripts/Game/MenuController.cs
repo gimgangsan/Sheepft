@@ -39,6 +39,14 @@ namespace Sheepft.Game
         public string soundText = "Sound";
         public string speedText = "Speed";
 
+        [Header("꿈 풍선")]
+        [Tooltip("3별 조건 글자. {0}은 3별 턴 수.")]
+        public string threeStarFormat = "3 stars in {0} turns";
+        [Tooltip("아직 열리지 않은 스테이지의 이름 자리.")]
+        public string lockedText = "Locked";
+        [Tooltip("풍선 안 글자 색(바깥선 색). 풍선 판은 양털 밝음이다.")]
+        public Color bubbleTextColor = new Color32(0x2b, 0x24, 0x33, 0xff);
+
         [Header("설정 줄의 오브젝트 (스프라이트 이름과 태그)")]
         public string musicProp = "setting_props:music";
         public string soundProp = "setting_props:sound";
@@ -101,7 +109,8 @@ namespace Sheepft.Game
         private TMP_FontAsset font;
         private int stageCount;
 
-        private Transform root, layoutRoot, rowRoot, highlightRoot;
+        private Transform root, layoutRoot, rowRoot, highlightRoot, bubbleContent;
+        private IReadOnlyList<Board> levels;
         private EntityView sheep;
         private readonly List<Arrow> titleArrows = new List<Arrow>();
         private readonly List<Arrow> stageArrows = new List<Arrow>();
@@ -132,6 +141,8 @@ namespace Sheepft.Game
             cam = camera;
             font = labelFont != null ? labelFont : TMP_Settings.defaultFontAsset;
             stageCount = stages;
+            // 꿈 풍선에 보일 스테이지 정보(이름, 별 조건, 맵). 읽기만 한다.
+            levels = catalog.stages != null ? LevelParser.ParseAll(catalog.stages.text) : new List<Board>();
 
             root = NewChild(transform, "menu");
             layoutRoot = NewChild(root, "layout");
@@ -163,6 +174,10 @@ namespace Sheepft.Game
             // 배경과 로고. 모든 스프라이트의 피벗은 캔버스의 아래쪽 가운데다.
             PlaceSheet("menu_background", Vector2.zero, new Vector2(BackgroundWidth, ScreenHeight), -50);
             PlaceSheet("title_logo", Settings.menuLogoTopLeft, Settings.menuLogoCanvasSize, -40);
+
+            // 꿈 풍선. 안의 내용은 고른 스테이지가 바뀔 때마다 UpdateBubble이 다시 채운다.
+            PlaceSheet("dream_bubble", Settings.menuBubbleTopLeft, Settings.menuBubbleCanvasSize, -30);
+            bubbleContent = NewChild(layoutRoot, "bubble content");
 
             // 땅 칸: 타이틀의 양 칸, 설정의 돌아가는 칸.
             PlaceTile("ground", TitleCell, 0);
@@ -549,6 +564,121 @@ namespace Sheepft.Game
             }
             UpdateArrowPosition(columnUp);
             UpdateArrowPosition(columnDown);
+            UpdateBubble();
+        }
+
+        // ── 꿈 풍선 ──
+
+        /// <summary>
+        /// 고른 스테이지의 이름, 얻은 별(3개 중 몇 개), 3별 조건, 맵 미리보기를 꿈 풍선 안에 그린다.
+        /// 잠긴 스테이지는 번호와 Locked만 적는다.
+        /// </summary>
+        private void UpdateBubble()
+        {
+            if (bubbleContent == null) return;
+            for (int i = bubbleContent.childCount - 1; i >= 0; i--) Destroy(bubbleContent.GetChild(i).gameObject);
+            if (selected < 0 || selected >= levels.Count) return;
+
+            var s = Settings;
+            var level = levels[selected];
+            bool locked = selected >= unlocked;
+
+            // 이름
+            string title = (selected + 1) + ". " + (locked ? lockedText : level.Rules.Name);
+            var titleLabel = NewBubbleLabel(title, TextAlignmentOptions.Center, new Vector2(0.5f, 1f));
+            titleLabel.transform.position = BubblePx(s.menuBubbleNameTop);
+            if (locked) return;
+
+            // 얻은 별: 3칸 중 얻은 만큼 별, 나머지는 빈 별.
+            var icons = catalog.Get("hud_icons");
+            int stars = SaveData.Stars(selected);
+            const float iconSize = 16f, iconGap = 2f;
+            float starsWidth = iconSize * 3f + iconGap * 2f;
+            for (int i = 0; i < 3; i++)
+            {
+                var icon = icons == null ? null : icons.TagFrame(i < stars ? "star" : "star_empty");
+                var topLeft = s.menuBubbleStarsTop + new Vector2(-starsWidth * 0.5f + i * (iconSize + iconGap), 0f);
+                PlaceBubbleSprite(icon, topLeft, iconSize, -27);
+            }
+
+            // 3별 조건: 턴 아이콘 + "3 stars in N turns". 둘을 묶어 가운데에 맞춘다.
+            var condition = NewBubbleLabel(string.Format(threeStarFormat, level.Rules.Star3Turns), TextAlignmentOptions.Left, new Vector2(0f, 0.5f));
+            float textWidth = condition.GetPreferredValues(condition.text).x / Pixel;
+            float groupWidth = iconSize + 3f + textWidth;
+            var groupLeft = s.menuBubbleConditionTop + new Vector2(-groupWidth * 0.5f, 0f);
+            PlaceBubbleSprite(icons == null ? null : icons.TagFrame("turn"), groupLeft, iconSize, -27);
+            condition.transform.position = BubblePx(groupLeft + new Vector2(iconSize + 3f, iconSize * 0.5f));
+
+            // 맵 미리보기: 칸 하나 16px. 지형을 먼저 깔고 그 위에 오브젝트 표시를 얹는다.
+            DrawMinimap(level, s.menuBubbleMapCenter);
+        }
+
+        /// <summary>minimap_tiles의 프레임 번호: 0–7 지형(TerrainType 순서와 같다), 8 구멍, 9– 오브젝트.</summary>
+        private void DrawMinimap(Board level, Vector2 center)
+        {
+            var tiles = catalog.Get("minimap_tiles");
+            if (tiles == null) return;
+            const float cell = 16f;
+            var origin = center - new Vector2(level.Width * cell * 0.5f, level.Height * cell * 0.5f);
+
+            foreach (var tile in level.Tiles)
+            {
+                if (tile.Kind == TileKind.OuterBlank) continue;
+                var topLeft = origin + new Vector2(tile.Pos.Col * cell, tile.Pos.Row * cell);
+                if (tile.Kind == TileKind.InnerBlank)
+                {
+                    PlaceBubbleSprite(tiles.Frame(8), topLeft, cell, -29);
+                    continue;
+                }
+
+                // 돌·나무·울타리·들불·재는 땅 위에 얹는 그림이라 땅을 먼저 깐다.
+                var type = tile.Terrain.Type;
+                PlaceBubbleSprite(tiles.Frame(0), topLeft, cell, -29);
+                if (type != TerrainType.Ground) PlaceBubbleSprite(tiles.Frame((int)type), topLeft, cell, -28);
+
+                foreach (var o in tile.Objects)
+                {
+                    int frame = MinimapFrame(o);
+                    if (frame >= 0) PlaceBubbleSprite(tiles.Frame(frame), topLeft, cell, -27);
+                }
+            }
+        }
+
+        private static int MinimapFrame(ObjectEntity o)
+        {
+            if (o is Sheep) return 9;
+            if (o is Wolf) return 10;
+            if (o is Goat) return 11;
+            if (o is Horse) return 12;
+            if (o is Cow) return 13;
+            if (o is FruitBasket) return 14;
+            if (o is Bucket) return 15;
+            return -1;
+        }
+
+        /// <summary>풍선 캔버스 기준 픽셀의 월드 좌표.</summary>
+        private Vector3 BubblePx(Vector2 local)
+        {
+            var p = Settings.menuBubbleTopLeft + local;
+            return Px(p.x, p.y);
+        }
+
+        /// <summary>size×size 캔버스의 그림을 왼쪽 위가 topLeft(풍선 기준)에 오게 놓는다. 피벗은 캔버스 아래쪽 가운데다.</summary>
+        private void PlaceBubbleSprite(Sprite sprite, Vector2 topLeft, float size, int order)
+        {
+            if (sprite == null) return;
+            var renderer = BoardView.NewRenderer(bubbleContent, sprite.name, order);
+            renderer.sprite = sprite;
+            renderer.transform.position = BubblePx(topLeft + new Vector2(size * 0.5f, size));
+        }
+
+        private TextMeshPro NewBubbleLabel(string text, TextAlignmentOptions align, Vector2 pivot)
+        {
+            var label = NewLabel(bubbleContent, text, align, pivot);
+            label.fontSize = Settings.menuBubbleFontSize;
+            label.color = bubbleTextColor;
+            label.sortingOrder = -26;
+            return label;
         }
 
         private Vector2 CellAt(float k) => StageCell - new Vector2(0f, 32f * k);

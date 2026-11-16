@@ -74,6 +74,29 @@ namespace Sheepft.Game
         [Tooltip("고른 줄의 위와 아래에 각각 보여 줄 스테이지 줄 수.")]
         [Min(0)] public int menuStageRowsAround = 2;
 
+        [Header("메뉴 배치: 꿈 풍선 (안의 위치는 풍선 캔버스의 왼쪽 위 기준 픽셀)")]
+        [Tooltip("dream_bubble 캔버스의 왼쪽 위(메뉴 그림 픽셀).")]
+        public Vector2 menuBubbleTopLeft = new Vector2(1548f, 4f);
+
+        [Tooltip("dream_bubble.aseprite의 캔버스 크기.")]
+        public Vector2 menuBubbleCanvasSize = new Vector2(365f, 269f);
+
+        [Tooltip("스테이지 이름 줄의 가운데 위.")]
+        public Vector2 menuBubbleNameTop = new Vector2(182f, 30f);
+
+        [Tooltip("얻은 별(별 아이콘 3개) 줄의 가운데 위.")]
+        public Vector2 menuBubbleStarsTop = new Vector2(182f, 50f);
+
+        [Tooltip("3별 조건 줄(턴 아이콘 + 글자)의 가운데 위.")]
+        public Vector2 menuBubbleConditionTop = new Vector2(182f, 70f);
+
+        [Tooltip("맵 미리보기의 가운데. 칸 하나는 16px이고, 가장 큰 맵(8×6)은 128×96이다.")]
+        public Vector2 menuBubbleMapCenter = new Vector2(182f, 146f);
+
+        [Tooltip("꿈 풍선 안 글자 크기(월드 공간 TextMeshPro).")]
+        [Min(0.1f)] public float menuBubbleFontSize = 4f;
+
+        [Header("메뉴 글자와 시간")]
         [Tooltip("메뉴 글자 크기(월드 공간 TextMeshPro).")]
         [Min(0.1f)] public float menuLabelFontSize = 4f;
 
