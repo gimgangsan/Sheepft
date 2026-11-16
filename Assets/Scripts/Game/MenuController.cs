@@ -35,6 +35,9 @@ namespace Sheepft.Game
         public string playText = "Play";
         public string settingText = "Setting";
         public string backText = "Back";
+        public string enterText = "Enter";
+        public string nextText = "Next";
+        public string previousText = "Previous";
         public string musicText = "Music";
         public string soundText = "Sound";
         public string speedText = "Speed";
@@ -68,7 +71,10 @@ namespace Sheepft.Game
             public Vector2 Cell;
             public Dir Dir;
             public Action OnClick;
+            /// <summary>마우스를 올리면 화살표가 보이고, 누르면 화살표를 누른 것과 같다.</summary>
             public TextMeshPro Label;
+            /// <summary>글자를 화살표 칸 위에 둔다(땅 열의 위쪽 끝). 아니면 아래.</summary>
+            public bool LabelAbove;
             public readonly List<Vector2> Line = new List<Vector2>();
             public GameObject Object;
             public SpriteRenderer Renderer;
@@ -210,10 +216,12 @@ namespace Sheepft.Game
 
             // 스테이지 선택: 고른 줄의 ▶(풀로 들어가 시작), ◀(타이틀로), 땅 열의 위아래 끝(BuildRows가 자리를 정한다).
             var grassCell = StageCell + new Vector2(32f, 0f);
-            stageArrows.Add(NewArrow(StageCell + new Vector2(-32f, 0f), Dir.Right, () => StartCoroutine(EnterSelected()), null, StageCell, grassCell));
-            stageArrows.Add(NewArrow(grassCell + new Vector2(32f, 0f), Dir.Left, () => StartCoroutine(GoAcross(MenuScreen.Title)), null, StageCell, grassCell));
-            columnUp = NewArrow(StageCell, Dir.Up, () => StartCoroutine(Scroll(1)), null);
-            columnDown = NewArrow(StageCell, Dir.Down, () => StartCoroutine(Scroll(-1)), null);
+            // 글자: ▶ Enter, ◀ Back, 땅 열 아래쪽 끝 ▲ Next(다음 스테이지가 위에 있다), 위쪽 끝 ▼ Previous.
+            stageArrows.Add(NewArrow(StageCell + new Vector2(-32f, 0f), Dir.Right, () => StartCoroutine(EnterSelected()), enterText, StageCell, grassCell));
+            stageArrows.Add(NewArrow(grassCell + new Vector2(32f, 0f), Dir.Left, () => StartCoroutine(GoAcross(MenuScreen.Title)), backText, StageCell, grassCell));
+            columnUp = NewArrow(StageCell, Dir.Up, () => StartCoroutine(Scroll(1)), nextText);
+            columnDown = NewArrow(StageCell, Dir.Down, () => StartCoroutine(Scroll(-1)), previousText);
+            columnDown.LabelAbove = true;
             stageArrows.Add(columnUp);
             stageArrows.Add(columnDown);
         }
@@ -272,7 +280,8 @@ namespace Sheepft.Game
             Vector3 world = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
             bool click = mouse.leftButton.wasPressedThisFrame;
 
-            // 화살표는 게임과 같이 마우스를 올려야 보인다. 타이틀은 아래 글자에 올려도 보인다.
+            // 화살표는 게임과 같이 마우스를 올려야 보인다. 글자가 붙은 화살표는 글자에 올려도 보이고,
+            // 글자를 눌러도 화살표를 누른 것과 같이 민다.
             var active = ArrowsOf(screen);
             Arrow shown = null, clicked = null;
             foreach (var arrow in AllArrows())
@@ -283,7 +292,7 @@ namespace Sheepft.Game
                 bool visible = overCell || overLabel;
                 if (arrow.Renderer != null) arrow.Renderer.enabled = visible;
                 if (visible) shown = arrow;
-                if (overCell && click) clicked = arrow;
+                if (visible && click) clicked = arrow;
             }
             ShowLine(shown);
             if (clicked != null)
@@ -564,6 +573,9 @@ namespace Sheepft.Game
             }
             UpdateArrowPosition(columnUp);
             UpdateArrowPosition(columnDown);
+            // 땅 열이 한 칸뿐이면 위아래로 밀 것이 없으니 Next·Previous 글자도 숨긴다.
+            foreach (var arrow in new[] { columnUp, columnDown })
+                if (arrow.Label != null) arrow.Label.gameObject.SetActive(IsUsable(arrow));
             UpdateBubble();
         }
 
@@ -772,19 +784,20 @@ namespace Sheepft.Game
                     arrow.Renderer.enabled = false;
                 }
             }
-            if (label != null)
-            {
-                // 글자는 화살표 칸 바로 아래 가운데.
-                arrow.Label = NewLabel(layoutRoot, label, TextAlignmentOptions.Center, new Vector2(0.5f, 1f));
-                arrow.Label.transform.position = Px(cell.x + 16f, cell.y + 34f);
-            }
+            if (label != null) arrow.Label = NewLabel(layoutRoot, label, TextAlignmentOptions.Center, new Vector2(0.5f, 1f));
             UpdateArrowPosition(arrow);
             return arrow;
         }
 
+        /// <summary>화살표와 그 글자를 칸에 맞춰 놓는다. 글자는 화살표 칸 바로 아래 가운데(LabelAbove면 바로 위).</summary>
         private void UpdateArrowPosition(Arrow arrow)
         {
             if (arrow.Object != null) arrow.Object.transform.position = Px(arrow.Cell.x + 16f, arrow.Cell.y + 16f);
+            if (arrow.Label == null) return;
+            arrow.Label.rectTransform.pivot = arrow.LabelAbove ? new Vector2(0.5f, 0f) : new Vector2(0.5f, 1f);
+            arrow.Label.transform.position = arrow.LabelAbove
+                ? Px(arrow.Cell.x + 16f, arrow.Cell.y - 2f)
+                : Px(arrow.Cell.x + 16f, arrow.Cell.y + 34f);
         }
 
         private TextMeshPro NewLabel(Transform parent, string text, TextAlignmentOptions align, Vector2 pivot)
