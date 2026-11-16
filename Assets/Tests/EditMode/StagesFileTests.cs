@@ -10,17 +10,19 @@ namespace Sheepft.Tests
     /// <summary>실제 레벨 파일 Assets/Levels/stages.txt를 게임 파서로 읽는다.</summary>
     public class StagesFileTests
     {
-        private const int StageCount = 30;
-
         internal static string ReadStagesText()
         {
             return File.ReadAllText(Path.Combine(Application.dataPath, "Levels", "stages.txt"));
         }
 
+        /// <summary>스테이지 수는 에디터로 바뀔 수 있으므로 정해 두지 않는다. 하나 이상이고 이름이 겹치지 않으면 된다.</summary>
         [Test]
-        public void StagesFile_HasThirtyLevels()
+        public void StagesFile_HasLevelsWithDistinctNames()
         {
-            Assert.AreEqual(StageCount, LevelParser.ParseAll(ReadStagesText()).Count);
+            var boards = LevelParser.ParseAll(ReadStagesText());
+            Assert.Greater(boards.Count, 0);
+            var names = new HashSet<string>();
+            foreach (var board in boards) Assert.IsTrue(names.Add(board.Rules.Name), "이름이 겹친다: " + board.Rules.Name);
         }
 
         [Test]

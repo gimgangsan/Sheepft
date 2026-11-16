@@ -422,7 +422,17 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 
 - 처음에는 1번만 열려 있고, 스테이지를 하나 깰 때마다 다음 하나가 열린다.
 - 메뉴에 들어올 때 양을 **마지막으로 한 스테이지의 줄**에 놓는다.
-- 저장(PlayerPrefs, WebGL에서도 쓸 수 있다): 열린 스테이지 수, 스테이지별 최고 별 수, 마지막으로 한 스테이지, 설정 3개.
+- 저장 내용: 열린 스테이지 수, 스테이지별 최고 별 수, 마지막으로 한 스테이지, 설정 3개, `stages.txt` 지문.
+
+#### 저장 파일 구조 (2026-11-17)
+
+- **파일 하나**: 모든 값을 `SaveFile` 하나에 담아 JSON 한 덩어리로 키 `sheepft.gameoff2026.save`에 쓴다. `version`이 다른 파일이나 깨진 파일은 버리고 새로 시작한다. 형식을 바꾸면 `SaveFile.CurrentVersion`을 올린다.
+- **저장소**
+  - WebGL 빌드: 브라우저 `localStorage`(`Assets/Scripts/Game/SaveStorage.jslib`). Unity의 PlayerPrefs는 WebGL에서 페이지 주소로 저장 경로를 정하는데, itch.io는 빌드를 다시 올릴 때마다 주소가 바뀌어 기록이 사라진다. `localStorage`는 출처가 같으면 남는다. 그 출처(`html-classic.itch.zone`)를 다른 게임과 함께 쓰므로 키에 게임 이름을 넣었다. 사생활 보호 모드처럼 저장소가 막히면 조용히 저장 없이 진행한다.
+  - 에디터와 그 밖의 플랫폼: PlayerPrefs의 같은 키.
+- **스테이지가 바뀌면 진행 기록 초기화**: 별과 열림은 스테이지 번호로 저장한다. 그래서 `stages.txt`의 지문(줄 끝 차이를 무시한 FNV-1a 해시)이 저장된 것과 다르면 진행 기록(열림, 별, 마지막 스테이지)을 지운다. 설정은 남긴다. 스테이지 에디터로 구성을 바꿔도 별이 엉뚱한 스테이지에 붙지 않는다.
+- **개발용 메뉴**: Sheepft > Reset Save Data(진행과 설정 모두 지움), Sheepft > Unlock All Stages.
+- 테스트는 `SaveFile`만 본다(`SaveFileTests`). 실제 저장소는 건드리지 않는다.
 
 ### 키보드
 
@@ -433,7 +443,7 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 
 | 단계 | 내용 |
 | --- | --- |
-| 11-1. 저장 | `SaveData`(PlayerPrefs). 클리어하면 별과 열린 스테이지를 기록. 지금의 `cleared`(실행 중에만 남음)를 대신한다 |
+| 11-1. 저장 | `SaveData`와 `SaveFile`(위 "저장 파일 구조"). 클리어하면 별과 열린 스테이지를 기록. 지금의 `cleared`(실행 중에만 남음)를 대신한다 |
 | 11-2. 타이틀·스테이지 선택 | `MenuController`(지금 화면, 카메라 이동), 메뉴 줄 하나를 밀고 그리는 `MenuRow`, 글자 hover로 화살표 보이기, 스테이지 줄 흐르기, 풀에 들어가면 스테이지 시작, `Esc`·메뉴 버튼으로 돌아오기. 꿈 풍선은 이름과 별만 |
 | 11-3. 꿈 풍선 (2026-11-17 구현) | 고른 스테이지의 이름, 얻은 별(`hud_icons`의 `star`/`star_empty` 3개), 3별 조건(턴 아이콘 + `3 stars in N turns`), `minimap_tiles`(16×16)로 그린 맵. 잠긴 스테이지는 번호와 `Locked`만. 위치는 `GameSettings`의 "메뉴 배치: 꿈 풍선"(`menuBubbleTopLeft`, 그리고 풍선 캔버스 기준의 `menuBubbleNameTop`·`StarsTop`·`ConditionTop`·`MapCenter`, `menuBubbleFontSize`) |
 | 11-4. 설정 (2026-11-16 구현) | 설정 줄 3개, 값 저장, 이동 속도 배율. 줄 위치는 `menuSettingsRowTopLeft`(첫 줄 맨 왼쪽 칸, 기본 (96, 56))와 `menuSettingsRowSpacing`(기본 56). 오브젝트는 음악 `setting_props:music`, 효과음 `setting_props:sound`, 이동 속도는 전용 그림이 없어 임시로 `horse:idle`(`MenuController`의 `speedProp`). 음악·효과음 값은 저장만 하고, 소리를 붙이는 11-5에서 쓴다 |

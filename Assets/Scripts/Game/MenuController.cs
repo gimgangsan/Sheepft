@@ -601,7 +601,12 @@ namespace Sheepft.Game
                 PlaceBubbleSprite(icon, topLeft, iconSize, -27);
             }
 
-            // 3별 조건: 턴 아이콘 + "3 stars in N turns". 둘을 묶어 가운데에 맞춘다.
+            // 3별 조건: 턴 아이콘 + "3 stars in N turns". 둘을 묶어 가운데에 맞춘다. @stars가 없는 스테이지는 줄을 비운다.
+            if (level.Rules.Star3Turns <= 0)
+            {
+                DrawMinimap(level, s.menuBubbleMapCenter);
+                return;
+            }
             var condition = NewBubbleLabel(string.Format(threeStarFormat, level.Rules.Star3Turns), TextAlignmentOptions.Left, new Vector2(0f, 0.5f));
             float textWidth = condition.GetPreferredValues(condition.text).x / Pixel;
             float groupWidth = iconSize + 3f + textWidth;

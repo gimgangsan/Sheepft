@@ -88,6 +88,8 @@ namespace Sheepft.Game
             }
 
             stageCount = LevelParser.ParseAll(catalog.stages.text).Count;
+            // 저장 파일을 읽는다. stages.txt가 바뀌었으면 진행 기록을 지운다(설정은 남음).
+            SaveData.Init(catalog.stages.text);
 
             // 메뉴는 같은 씬의 먼 자리에 있고, 카메라를 옮겨 오간다(구현 계획 11절).
             menu = NewChild("menu").gameObject.AddComponent<MenuController>();
