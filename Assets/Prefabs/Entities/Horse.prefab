@@ -142,7 +142,7 @@ Transform:
   m_GameObject: {fileID: 6119312842059157570}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.5625, y: 0.53125, z: 0}
+  m_LocalPosition: {x: 0, y: 0.8125, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -241,7 +241,7 @@ GameObject:
   - component: {fileID: 3787353044567421434}
   - component: {fileID: 9047098013194459792}
   m_Layer: 0
-  m_Name: Horse
+  m_Name: horse
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -290,3 +290,4 @@ MonoBehaviour:
   HasTarget: 0
   Full: 0
   Count: 1
+  RiderId: -1
