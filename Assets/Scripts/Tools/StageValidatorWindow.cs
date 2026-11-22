@@ -44,6 +44,22 @@ namespace Sheepft.Tools
 
         private int maxNodes = StageChecker.DefaultMaxNodes;
         private int selected = -1;
+        [NonSerialized] private int shownSelected = -1;     // Layout 이벤트 때의 selected
+        [NonSerialized] private string shownPruneSpec;      // Layout 이벤트 때의 PruneSpec (백그라운드가 채운다)
+
+        /// <summary>
+        /// 지금 이벤트가 끝난 뒤에 실행한다. 목록을 다시 읽거나 고른 줄을 바꾸면 화면 구성이 바뀌므로 OnGUI 도중에 하지 않는다
+        /// (IMGUI는 Layout 이벤트와 같은 구성으로 나머지 이벤트를 그려야 한다).
+        /// </summary>
+        private void Defer(Action action)
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null) return;
+                action();
+                Repaint();
+            };
+        }
         private Vector2 tableScroll, detailScroll;
         private GUIStyle mono, monoArea;
 
@@ -222,6 +238,13 @@ namespace Sheepft.Tools
                 monoArea = new GUIStyle(EditorStyles.textArea) { font = font, wordWrap = false };
             }
 
+            // 백그라운드 스레드가 바꾸는 값 중 화면 구성에 쓰는 것은 Layout 이벤트 때 한 번 정한다.
+            if (Event.current.type == EventType.Layout)
+            {
+                shownSelected = selected;
+                shownPruneSpec = selected >= 0 && selected < rows.Length ? rows[selected].PruneSpec : null;
+            }
+
             DrawToolbar();
             if (parseError != null)
             {
@@ -248,7 +271,7 @@ namespace Sheepft.Tools
             {
                 using (new EditorGUI.DisabledScope(busy))
                 {
-                    if (GUILayout.Button("Validate All", EditorStyles.toolbarButton, GUILayout.Width(90))) ValidateAll();
+                    if (GUILayout.Button("Validate All", EditorStyles.toolbarButton, GUILayout.Width(90))) Defer(ValidateAll);
                 }
                 using (new EditorGUI.DisabledScope(!busy))
                 {
@@ -317,39 +340,39 @@ namespace Sheepft.Tools
                 GUI.contentColor = color;
                 var style = new GUIStyle(mono);
                 if (selected == i) style.fontStyle = FontStyle.Bold;
-                if (GUILayout.Button(text, style)) selected = i;
+                if (GUILayout.Button(text, style)) Defer(() => selected = i);
                 GUI.contentColor = old;
                 GUILayout.FlexibleSpace();
                 using (new EditorGUI.DisabledScope(busy))
                 {
-                    if (GUILayout.Button("Solve", EditorStyles.miniButtonLeft, GUILayout.Width(46))) { selected = i; ValidateOne(i); }
-                    if (GUILayout.Button("Prune", EditorStyles.miniButtonRight, GUILayout.Width(46))) PruneOne(i);
+                    if (GUILayout.Button("Solve", EditorStyles.miniButtonLeft, GUILayout.Width(46))) Defer(() => { selected = i; ValidateOne(i); });
+                    if (GUILayout.Button("Prune", EditorStyles.miniButtonRight, GUILayout.Width(46))) Defer(() => PruneOne(i));
                 }
             }
         }
 
         private void DrawDetails()
         {
-            if (selected < 0 || selected >= rows.Length)
+            if (shownSelected < 0 || shownSelected >= rows.Length)
             {
                 EditorGUILayout.HelpBox("줄을 누르면 자세한 결과가 여기 나온다. Solve는 그 스테이지만 다시 검증하고, Prune은 shift 포인트 조합을 찾는다.", MessageType.None);
                 return;
             }
-            var row = rows[selected];
+            var row = rows[shownSelected];
             var sb = new StringBuilder();
             if (row.State == RowState.Done) sb.Append(StageChecker.Details(row.Check));
             else if (row.State == RowState.Failed) sb.Append(row.Error);
-            else sb.Append((selected + 1) + ". " + row.Level.Rules.Name + "\n" + LevelWriter.Write(row.Level));
+            else sb.Append((shownSelected + 1) + ". " + row.Level.Rules.Name + "\n" + LevelWriter.Write(row.Level));
 
             if (row.Pruning) sb.Append("\n\nprune 중...");
             else if (row.Prune != null) sb.Append("\n\nprune:\n").Append(row.Prune);
 
-            if (row.PruneSpec != null)
+            if (shownPruneSpec != null)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUILayout.LabelField("shift: " + row.PruneSpec, mono);
-                    if (GUILayout.Button("Copy", GUILayout.Width(50))) EditorGUIUtility.systemCopyBuffer = row.PruneSpec;
+                    EditorGUILayout.LabelField("shift: " + shownPruneSpec, mono);
+                    if (GUILayout.Button("Copy", GUILayout.Width(50))) EditorGUIUtility.systemCopyBuffer = shownPruneSpec;
                 }
             }
 

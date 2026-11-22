@@ -59,6 +59,7 @@ namespace Sheepft.Tools
         // ── 검증·Prune·채우기 (백그라운드) ──
         [NonSerialized] private CancellationTokenSource cts;
         [NonSerialized] private volatile bool busy;
+        [NonSerialized] private bool busyShown; // Layout 이벤트 때의 busy. 화면 구성은 이 값으로 정한다
         [NonSerialized] private volatile string busyLabel;
         [NonSerialized] private string resultText = "";
         [NonSerialized] private Action pendingApply; // 백그라운드 결과를 메인 스레드에서 적용
@@ -211,6 +212,22 @@ namespace Sheepft.Tools
             Repaint();
         }
 
+        /// <summary>
+        /// 지금 이벤트가 끝난 뒤에 실행한다. IMGUI는 Layout 이벤트에서 잡은 컨트롤 구성과 같은 구성으로 나머지 이벤트를
+        /// 그려야 한다. 그래서 확인 창을 띄우거나(모달 창이 도중에 다른 이벤트를 처리한다) 화면 구성을 바꾸는 일
+        /// (스테이지 고르기·옮기기·추가·삭제, 크기 바꾸기, 검증 시작 등)은 OnGUI 도중에 하지 않고 여기로 미룬다.
+        /// 그러지 않으면 "EndLayoutGroup: BeginLayoutGroup must be called first" 같은 오류가 난다.
+        /// </summary>
+        private void Defer(Action action)
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null) return; // 그 사이에 창이 닫혔다
+                action();
+                Repaint();
+            };
+        }
+
         private StageDraft Current => file != null && selected >= 0 && selected < file.stages.Count ? file.stages[selected] : null;
 
         // ── 화면 ──
@@ -218,11 +235,13 @@ namespace Sheepft.Tools
         private void OnGUI()
         {
             if (sprites == null) sprites = new StageSprites();
+            // 검증 중인지는 백그라운드 스레드가 바꾸므로, 화면 구성에 쓰는 값은 Layout 이벤트 때 한 번 정한다.
+            if (Event.current.type == EventType.Layout) busyShown = busy;
 
             if (file == null)
             {
                 EditorGUILayout.HelpBox(loadError ?? "stages.txt를 읽는 중", MessageType.Error);
-                if (GUILayout.Button("Reload", GUILayout.Width(100))) LoadFromDisk();
+                if (GUILayout.Button("Reload", GUILayout.Width(100))) Defer(LoadFromDisk);
                 return;
             }
 
@@ -260,10 +279,13 @@ namespace Sheepft.Tools
             {
                 using (new EditorGUI.DisabledScope(!dirty))
                 {
-                    if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(50))) Save();
-                    if (GUILayout.Button("Revert", EditorStyles.toolbarButton, GUILayout.Width(55))
-                        && EditorUtility.DisplayDialog("Stage Editor", "저장하지 않은 변경을 모두 버리고 파일을 다시 읽을까?", "버리기", "취소"))
-                        LoadFromDisk();
+                    if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(50))) Defer(() => Save());
+                    if (GUILayout.Button("Revert", EditorStyles.toolbarButton, GUILayout.Width(55)))
+                        Defer(() =>
+                        {
+                            if (EditorUtility.DisplayDialog("Stage Editor", "저장하지 않은 변경을 모두 버리고 파일을 다시 읽을까?", "버리기", "취소"))
+                                LoadFromDisk();
+                        });
                 }
                 if (GUILayout.Button(new GUIContent("Undo", "Ctrl+Z. Unity의 Undo라서 씬에서 한 일도 함께 되돌린다"), EditorStyles.toolbarButton, GUILayout.Width(45)))
                     UnityEditor.Undo.PerformUndo();
@@ -301,13 +323,15 @@ namespace Sheepft.Tools
                     // 누르면 고르고, 끌어서 다른 줄에 놓으면 그 자리로 옮긴다.
                     if (e.type == EventType.MouseDown && e.button == 0 && rect.Contains(e.mousePosition))
                     {
-                        SelectStage(i);
+                        int index = i;
+                        Defer(() => SelectStage(index));
                         dragFrom = i;
                         e.Use();
                     }
                     else if (e.type == EventType.MouseUp && dragFrom >= 0 && rect.Contains(e.mousePosition))
                     {
-                        if (dragFrom != i) MoveStage(dragFrom, i);
+                        int from = dragFrom, to = i;
+                        if (from != to) Defer(() => MoveStage(from, to));
                         dragFrom = -1;
                         e.Use();
                     }
@@ -318,28 +342,21 @@ namespace Sheepft.Tools
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("+ New")) { Record(null); SelectStage(file.AddNew(selected)); Changed(); }
+                    if (GUILayout.Button("+ New")) Defer(() => { Record("add stage"); SelectStage(file.AddNew(selected)); Changed(); });
                     using (new EditorGUI.DisabledScope(Current == null))
                     {
-                        if (GUILayout.Button("Duplicate")) { Record(null); SelectStage(file.Duplicate(selected)); Changed(); }
-                        if (GUILayout.Button("Delete")
-                            && EditorUtility.DisplayDialog("Stage Editor", (selected + 1) + ". " + Current.name + " 을(를) 지울까? (Save 전까지는 Undo로 되돌릴 수 있다)", "지우기", "취소"))
-                        {
-                            Record(null);
-                            file.Delete(selected);
-                            SelectStage(Mathf.Min(selected, file.stages.Count - 1));
-                            Changed();
-                        }
+                        if (GUILayout.Button("Duplicate")) Defer(() => { Record("duplicate stage"); SelectStage(file.Duplicate(selected)); Changed(); });
+                        if (GUILayout.Button("Delete")) Defer(DeleteSelected);
                     }
                 }
                 using (new EditorGUILayout.HorizontalScope())
                 using (new EditorGUI.DisabledScope(Current == null))
                 {
-                    if (GUILayout.Button("▲", GUILayout.Width(28)) && selected > 0) MoveStage(selected, selected - 1);
-                    if (GUILayout.Button("▼", GUILayout.Width(28)) && selected < file.stages.Count - 1) MoveStage(selected, selected + 1);
+                    if (GUILayout.Button("▲", GUILayout.Width(28))) Defer(() => MoveStage(selected, selected - 1));
+                    if (GUILayout.Button("▼", GUILayout.Width(28))) Defer(() => MoveStage(selected, selected + 1));
                     GUILayout.Label("→", GUILayout.Width(14));
                     moveTarget = EditorGUILayout.IntField(moveTarget, GUILayout.Width(34));
-                    if (GUILayout.Button("번 자리로")) MoveStage(selected, moveTarget - 1);
+                    if (GUILayout.Button("번 자리로")) Defer(() => MoveStage(selected, moveTarget - 1));
                 }
             }
         }
@@ -354,8 +371,23 @@ namespace Sheepft.Tools
             Repaint();
         }
 
+        private void DeleteSelected()
+        {
+            var d = Current;
+            if (d == null) return;
+            if (!EditorUtility.DisplayDialog("Stage Editor", (selected + 1) + ". " + d.name + " 을(를) 지울까? (Save 전까지는 Undo로 되돌릴 수 있다)", "지우기", "취소"))
+                return;
+            Record("delete stage");
+            file.Delete(selected);
+            selected = Mathf.Clamp(selected, 0, Mathf.Max(0, file.stages.Count - 1));
+            moveTarget = selected + 1;
+            resultText = "";
+            Changed();
+        }
+
         private void MoveStage(int from, int to)
         {
+            if (file.stages.Count == 0) return;
             to = Mathf.Clamp(to, 0, file.stages.Count - 1);
             if (from == to) return;
             Record(null);
@@ -378,11 +410,15 @@ namespace Sheepft.Tools
                 bool newAuto = EditorGUILayout.ToggleLeft("목표 양 = 양 수 (" + d.SheepCount() + ")", auto, GUILayout.Width(150));
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Record(null);
-                    d.target = newAuto ? StageDraft.AutoTarget : d.SheepCount();
-                    Changed();
+                    // 체크에 따라 옆의 숫자 칸이 생기거나 없어지므로 이벤트가 끝난 뒤에 바꾼다.
+                    Defer(() =>
+                    {
+                        Record("target");
+                        d.target = newAuto ? StageDraft.AutoTarget : d.SheepCount();
+                        Changed();
+                    });
                 }
-                if (!newAuto) d.target = IntField("목표 양", d.target, "target", 140);
+                if (!auto) d.target = IntField("목표 양", d.target, "target", 140);
             }
             d.description = TextField("Desc", d.description, "desc");
             using (new EditorGUILayout.HorizontalScope())
@@ -693,9 +729,12 @@ namespace Sheepft.Tools
 
         private void Resize(Action edit)
         {
-            Record(null);
-            edit();
-            Changed();
+            Defer(() =>
+            {
+                Record("resize");
+                edit();
+                Changed();
+            });
         }
 
         // ── 아래: 상태와 검증 ──
@@ -711,18 +750,18 @@ namespace Sheepft.Tools
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                using (new EditorGUI.DisabledScope(!ok || busy))
+                using (new EditorGUI.DisabledScope(!ok || busyShown))
                 {
-                    if (GUILayout.Button(new GUIContent("Validate", "지금 내용(저장 전)을 검증 창과 같은 기준으로 검증한다"))) StartValidate(board);
-                    if (GUILayout.Button(new GUIContent("Prune → 적용", "모든 줄을 연 상태에서 의도와 다른 해를 만드는 포인트만 뺀 조합을 찾아 적용한다"))) StartPrune(board);
-                    if (GUILayout.Button(new GUIContent("Solver로 채우기", "최적해를 구해 풀이 줄과 별 3개 기준을 채운다. 별 2개·제한 턴이 모자라면 늘린다"))) StartFill(board);
+                    if (GUILayout.Button(new GUIContent("Validate", "지금 내용(저장 전)을 검증 창과 같은 기준으로 검증한다"))) Defer(() => StartValidate(board));
+                    if (GUILayout.Button(new GUIContent("Prune → 적용", "모든 줄을 연 상태에서 의도와 다른 해를 만드는 포인트만 뺀 조합을 찾아 적용한다"))) Defer(() => StartPrune(board));
+                    if (GUILayout.Button(new GUIContent("Solver로 채우기", "최적해를 구해 풀이 줄과 별 3개 기준을 채운다. 별 2개·제한 턴이 모자라면 늘린다"))) Defer(() => StartFill(board));
                 }
-                using (new EditorGUI.DisabledScope(!busy))
+                using (new EditorGUI.DisabledScope(!busyShown))
                     if (GUILayout.Button("Cancel", GUILayout.Width(60)) && cts != null) cts.Cancel();
-                using (new EditorGUI.DisabledScope(!ok || busy || EditorApplication.isPlayingOrWillChangePlaymode))
-                    if (GUILayout.Button(new GUIContent("▶ Play", "저장한 뒤 이 스테이지로 바로 Play한다"), GUILayout.Width(70))) PlayStage();
+                using (new EditorGUI.DisabledScope(!ok || busyShown || EditorApplication.isPlayingOrWillChangePlaymode))
+                    if (GUILayout.Button(new GUIContent("▶ Play", "저장한 뒤 이 스테이지로 바로 Play한다"), GUILayout.Width(70))) Defer(PlayStage);
             }
-            if (busy) EditorGUILayout.LabelField(busyLabel + "  " + (busyWatch.ElapsedMilliseconds / 1000f).ToString("0.0") + "s", EditorStyles.miniLabel);
+            if (busyShown && busyWatch != null) EditorGUILayout.LabelField(busyLabel + "  " + (busyWatch.ElapsedMilliseconds / 1000f).ToString("0.0") + "s", EditorStyles.miniLabel);
             if (!string.IsNullOrEmpty(resultText))
             {
                 resultScroll = EditorGUILayout.BeginScrollView(resultScroll, GUILayout.Height(160));
