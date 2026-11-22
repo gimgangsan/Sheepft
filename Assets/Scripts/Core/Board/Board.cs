@@ -15,6 +15,7 @@ namespace Sheepft.Core
     {
         // null 없음. 빈칸도 Tile이다.
         private readonly Tile[,] tiles;
+        private readonly Tile[] flatTiles; // 같은 칸들을 행 우선으로 늘어놓은 것
         private readonly Tile[][] rowLines;
         private readonly Tile[][] colLines;
 
@@ -39,12 +40,29 @@ namespace Sheepft.Core
         /// <summary>이번 턴에 일어난 일. 화면 재생용이다. 턴을 시작할 때 비운다.</summary>
         public readonly List<GameEvent> Events = new List<GameEvent>();
 
+        /// <summary>이번 턴에 쓰인 기믹. 스테이지 검증용이고 화면은 읽지 않는다. 턴을 시작할 때 비운다.</summary>
+        public Mechanic Mechanics;
+
+        /// <summary>레벨을 열 때의 지형. 레벨 중에 바뀌지 않는다. "처음에 울타리·나무였던 칸" 판정에 쓴다.</summary>
+        private TerrainType[,] initialTerrain;
+
         public Board(Tile[,] tiles, LevelRules rules)
         {
             this.tiles = tiles ?? throw new ArgumentNullException(nameof(tiles));
             Rules = rules ?? throw new ArgumentNullException(nameof(rules));
             Height = tiles.GetLength(0);
             Width = tiles.GetLength(1);
+
+            flatTiles = new Tile[Height * Width];
+            initialTerrain = new TerrainType[Height, Width];
+            for (int r = 0; r < Height; r++)
+            {
+                for (int c = 0; c < Width; c++)
+                {
+                    flatTiles[r * Width + c] = tiles[r, c];
+                    if (!tiles[r, c].IsBlank) initialTerrain[r, c] = tiles[r, c].Terrain.Type;
+                }
+            }
 
             // 빈칸은 레벨 중에 생기거나 사라지지 않으므로 줄을 한 번만 만든다.
             rowLines = new Tile[Height][];
@@ -113,27 +131,17 @@ namespace Sheepft.Core
             return lines[index];
         }
 
-        /// <summary>모든 칸. (0,0)부터 행 우선 순서다. 빈칸도 나온다.</summary>
-        public IEnumerable<Tile> Tiles
-        {
-            get
-            {
-                for (int r = 0; r < Height; r++)
-                    for (int c = 0; c < Width; c++)
-                        yield return tiles[r, c];
-            }
-        }
+        /// <summary>
+        /// 모든 칸. (0,0)부터 행 우선 순서다. 빈칸도 나온다. 배열 자체는 고치지 않는다.
+        /// solver가 한 턴을 수백만 번 돌리므로 열거할 때 메모리를 새로 잡지 않게 배열을 그대로 내준다.
+        /// </summary>
+        public Tile[] Tiles => flatTiles;
 
-        /// <summary>모든 오브젝트. 칸은 행 우선, 같은 칸에서는 Id 순서다.</summary>
-        public IEnumerable<ObjectEntity> Objects
-        {
-            get
-            {
-                foreach (var t in Tiles)
-                    foreach (var o in t.Objects)
-                        yield return o;
-            }
-        }
+        /// <summary>
+        /// 모든 오브젝트. 칸은 행 우선, 같은 칸에서는 Id 순서다.
+        /// foreach는 메모리를 새로 잡지 않는다. 열거하는 동안 칸의 오브젝트 목록을 고치지 않는다.
+        /// </summary>
+        public ObjectList Objects => new ObjectList(flatTiles);
 
         /// <summary>그 Id의 오브젝트. 없거나 사라졌으면 null.</summary>
         public ObjectEntity Find(int id)
@@ -159,6 +167,55 @@ namespace Sheepft.Core
             dest.Objects.Insert(i, o);
             o.Pos = to;
             Events.Add(new MovedEvent(o.Id, from, to, cause));
+
+            var t0 = initialTerrain[to.Row, to.Col];
+            if (t0 == TerrainType.Fence || t0 == TerrainType.Tree)
+            {
+                Mark(Mechanic.EnterBurnt);
+                if (o is Sheep) Mark(Mechanic.SheepEnterBurnt);
+            }
+        }
+
+        /// <summary>이번 턴에 그 기믹이 쓰였다고 적는다.</summary>
+        public void Mark(Mechanic m)
+        {
+            Mechanics |= m;
+        }
+
+        /// <summary>양마다 지금 칸. 한 행동 전후로 비교해 양이 모였는지(SheepMerge) 본다. 양이 둘 미만이면 null.</summary>
+        public Dictionary<int, Pos> SheepPositions()
+        {
+            Dictionary<int, Pos> result = null;
+            int n = 0;
+            foreach (var o in Objects)
+            {
+                if (!(o is Sheep)) continue;
+                if (result == null) result = new Dictionary<int, Pos>();
+                result[o.Id] = o.Pos;
+                n++;
+            }
+            return n >= 2 ? result : null;
+        }
+
+        /// <summary>
+        /// SheepPositions로 적어 둔 뒤에, 서로 다른 칸에 있던 양이 한 칸에 모였으면 SheepMerge를 켠다.
+        /// before가 null이면(양이 둘 미만) 아무것도 하지 않는다.
+        /// </summary>
+        public void MarkSheepMerge(Dictionary<int, Pos> before)
+        {
+            if (before == null) return;
+            foreach (var t in Tiles)
+            {
+                if (t.Objects.Count < 2) continue;
+                Pos? first = null;
+                foreach (var o in t.Objects)
+                {
+                    Pos was;
+                    if (!(o is Sheep) || !before.TryGetValue(o.Id, out was)) continue;
+                    if (first == null) first = was;
+                    else if (first.Value != was) { Mark(Mechanic.SheepMerge); return; }
+                }
+            }
         }
 
         /// <summary>오브젝트를 없앤다. 양이 줄어 목표 수보다 적어지면 그 순간 패배다. README 8절.</summary>
@@ -340,10 +397,75 @@ namespace Sheepft.Core
                 }
             }
             var board = new Board(copy, Rules);
+            board.initialTerrain = initialTerrain; // 바뀌지 않으므로 같이 쓴다.
             board.TurnsUsed = TurnsUsed;
             board.Result = Result;
             board.TurnEnding = TurnEnding;
             return board;
+        }
+    }
+
+    /// <summary>
+    /// Board.Objects의 열거. foreach가 구조체 열거자를 쓰므로 메모리를 새로 잡지 않는다.
+    /// LINQ 등 IEnumerable로 쓸 때는 보통의 열거처럼 동작한다.
+    /// </summary>
+    public readonly struct ObjectList : IEnumerable<ObjectEntity>
+    {
+        private readonly Tile[] tiles;
+
+        public ObjectList(Tile[] tiles)
+        {
+            this.tiles = tiles;
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(tiles);
+        IEnumerator<ObjectEntity> IEnumerable<ObjectEntity>.GetEnumerator() => GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<ObjectEntity>
+        {
+            private readonly Tile[] tiles;
+            private int tile;
+            private int index;
+            private ObjectEntity current;
+
+            public Enumerator(Tile[] tiles)
+            {
+                this.tiles = tiles;
+                tile = 0;
+                index = -1;
+                current = null;
+            }
+
+            public ObjectEntity Current => current;
+            object System.Collections.IEnumerator.Current => current;
+
+            public bool MoveNext()
+            {
+                while (tile < tiles.Length)
+                {
+                    var objects = tiles[tile].Objects;
+                    index++;
+                    if (index < objects.Count)
+                    {
+                        current = objects[index];
+                        return true;
+                    }
+                    tile++;
+                    index = -1;
+                }
+                current = null;
+                return false;
+            }
+
+            public void Reset()
+            {
+                tile = 0;
+                index = -1;
+                current = null;
+            }
+
+            public void Dispose() { }
         }
     }
 }

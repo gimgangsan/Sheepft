@@ -252,7 +252,7 @@ Settle():
   - `TerrainChanged(pos, from, to)`, `StatusChanged(id, status, on)`, `CountChanged(id, n)`, `TargetChanged(id, targetId)`
   - `StepEnd` — shift, 한 마리의 행동, 확산, 정리 한 바퀴마다. 화면이 여기서 잠깐 쉬며 연쇄 반응을 읽을 수 있게 한다.
 - 화면(`Sheepft.Game`)은 이벤트를 차례로 재생한다. 재생 중 입력은 막고, 클릭하면 빨리 감는다.
-- **undo**: 턴마다 `Board.Clone()`을 스택에 쌓는다. 맵이 작아 통째 복사가 가장 단순하고 안전하다. undo·재시작 때 화면은 애니메이션 없이 스냅샷으로 다시 그린다. (게임 코드에는 솔버를 넣지 않는다. 스테이지 검증용 solver는 `Assets/Levels/Solver~/`에 있다.)
+- **undo**: 턴마다 `Board.Clone()`을 스택에 쌓는다. 맵이 작아 통째 복사가 가장 단순하고 안전하다. undo·재시작 때 화면은 애니메이션 없이 스냅샷으로 다시 그린다. (게임 빌드에는 솔버를 넣지 않는다. 스테이지 검증용 solver는 에디터 전용 `Assets/Scripts/Tools/`에 있다.)
 
 ### 칸과 화살표 그리기
 
@@ -278,7 +278,8 @@ Settle():
 | --- | --- | --- |
 | `Assets/Scripts/Core/` | `Sheepft.Core` (`noEngineReferences: true`) | 맵, 엔티티, 규칙, 레벨 파서. UnityEngine을 쓰지 않는다 |
 | `Assets/Scripts/Game/` | `Sheepft.Game` | View, 입력, HUD, 씬 진행 |
-| `Assets/Tests/EditMode/` | `Sheepft.Tests` (Editor 전용) | Core 단위 테스트 |
+| `Assets/Scripts/Tools/` | `Sheepft.Tools` (Editor 전용) | 스테이지 solver·검증기·prune과 검증 창(Sheepft > Stage Validator). 규칙은 `Core`를 그대로 쓴다. [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md) |
+| `Assets/Tests/EditMode/` | `Sheepft.Tests` (Editor 전용) | Core·Tools 단위 테스트 |
 | `Assets/Levels/` | | 레벨 텍스트 파일 (`TextAsset`) |
 
 `Core` 안은 `Board/`, `Entities/`, `Rules/`, `Level/`, `Events/`로 나눈다.
@@ -299,7 +300,7 @@ README 10절 표기법을 읽는다.
 - **`@` 줄**(선택): 풀이 줄 다음에 온다. `Assets/Levels/stages.txt`가 쓰는 표시다.
   - `@desc 문장`: 플레이어용 설명 → `LevelRules.Description`. 여러 줄이면 이어 붙인다.
   - `@stars 3 4`: 별 3개, 별 2개 기준 턴 → `Star3Turns`, `Star2Turns`.
-  - `@intent`, `@optimal`: solver 전용. 게임 파서는 읽고 버린다.
+  - `@intent`, `@optimal`: 스테이지 검증용 기믹 이름(`Mechanic`) → `Intent`, `OptimalIntent`. 게임 진행에는 쓰지 않는다. 모르는 이름은 오류.
   - 그 밖의 `@` 줄은 오류.
 - `//`로 시작하는 줄과 빈 줄은 건너뛴다. 한 파일에 레벨을 여러 개 이어 적고, 헤더(`#`으로 시작하고 `shift`가 있는 줄)가 레벨을 나눈다. 돌(`#`)로 시작하는 맵 줄과는 `shift`와 `풀이`라는 말로 구분한다.
 - **격자**: 공백으로 칸을 나눈다. 모든 행의 칸 수가 같아야 한다.
@@ -367,8 +368,8 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 - 늑대는 같은 칸의 젖거나 화상 입은 양을 먼저 먹는다. 기절·식사 중에는 잡지 않는다.
 - 합류한 무리는 하나라도 젖었으면 젖고, 하나라도 식사 중이면 식사를 유지한다(남은 기간은 가장 긴 것).
 - 들불 확산은 순환하지 않고, 물 칸은 들불이 되지 않는다.
-- 게임 코드에는 솔버를 넣지 않는다. 테스트는 `Assets/Tests/`에 둔다.
-- 스테이지 설계용 시뮬레이터와 solver는 `Assets/Levels/Solver~/`에 따로 있다(Unity가 불러오지 않음). 규칙 구현이 둘이므로, 9단계의 풀이 테스트로 두 구현을 맞춰 본다. 규칙을 바꾸면 양쪽을 함께 고치고 `check`를 다시 돌린다.
+- 게임 빌드에는 솔버를 넣지 않는다. 테스트는 `Assets/Tests/`에 둔다.
+- 스테이지 검증용 solver는 에디터 전용 `Assets/Scripts/Tools/`에 있고 게임의 규칙 코드(`Core`)를 그대로 쓴다(2026-11-23, 예전 `Assets/Levels/Solver~/`의 별도 구현을 대체). 그래서 규칙을 바꾸면 `Core`만 고치고 검증 창으로 다시 검증한다.
 
 ## 10. 아직 확인할 것
 

@@ -67,6 +67,7 @@ namespace Sheepft.Core
             b.SetMeal(this, meal);
             b.SetStun(this, b.NewStatusDuration); // 싸우느라 기절한다. 이미 기절 중이어도 처음부터 다시 센다.
             LastWalkDir = null;
+            b.Mark(Mechanic.WolfMerge);
             return true;
         }
 
@@ -79,20 +80,31 @@ namespace Sheepft.Core
         /// </summary>
         public override bool TryAutoReact(Board b, AutoReaction k)
         {
-            if (k != AutoReaction.WolfCatch || !CanCatch) return false;
+            if (k != AutoReaction.WolfCatch || Burned) return false;
 
             int range = Count - 1;
-            var inRange = new List<Sheep>();
+            List<Sheep> inRange = null; // 정리 절차마다 불리므로 범위에 양이 있을 때만 목록을 만든다.
             foreach (var o in b.Objects)
             {
                 var sheep = o as Sheep;
-                if (sheep != null && Ring(sheep.Pos) <= range) inRange.Add(sheep);
+                if (sheep == null || Ring(sheep.Pos) > range) continue;
+                if (inRange == null) inRange = new List<Sheep>();
+                inRange.Add(sheep);
             }
-            if (inRange.Count == 0) return false;
+            if (inRange == null) return false;
+
+            // 기절·식사 중에는 잡지 않는다. 검증용으로 "범위에 양이 있었지만 잡지 않음"을 적는다.
+            if (StunLeft > 0) { b.Mark(Mechanic.StunSpared); return false; }
+            if (MealLeft > 0) { b.Mark(Mechanic.MealSpared); return false; }
 
             inRange.Sort(EatOrder);
             int eat = Math.Min(Count, inRange.Count);
-            for (int i = 0; i < eat; i++) b.Remove(inRange[i], RemoveCause.Eaten);
+            for (int i = 0; i < eat; i++)
+            {
+                if (inRange[i].Pos != Pos) b.Mark(Mechanic.PackCatch);
+                b.Remove(inRange[i], RemoveCause.Eaten);
+            }
+            b.Mark(Mechanic.WolfEat);
             b.SetMeal(this, b.NewStatusDuration);
             return true;
         }
@@ -132,10 +144,22 @@ namespace Sheepft.Core
                 targets.Add(o.Pos);
             }
 
+            if (targets.Count == 0) return;
+
             var dir = Pathfinder.FirstStep(b, Pos, targets, LastWalkDir);
-            if (dir == null) return;
+            if (dir == null)
+            {
+                b.Mark(Mechanic.WolfNoPath);
+                return;
+            }
             b.Move(this, Pos.Step(dir.Value), MoveCause.Walk);
             LastWalkDir = dir;
+            b.Mark(Mechanic.WolfWalk);
+        }
+
+        public override bool IsHeldByRide(Board b)
+        {
+            return StunLeft == 0 && MealLeft == 0 && base.IsHeldByRide(b);
         }
     }
 }

@@ -206,3 +206,17 @@
 - [ ] `Assets/Data/GameSettings.asset`의 Move Seconds를 바꾸고 Play하면 이동 속도가 달라진다.
 - [ ] Stack Spacing Pixels를 바꾸면 같은 칸에 겹친 양의 간격이 달라진다.
 - [ ] Setup Game Scene을 다시 돌려도 위에서 바꾼 값과 씬에서 고친 것이 그대로 남는다.
+
+## 스테이지 검증 창 (2026-11-23)
+
+Play가 아니라 에디터에서 확인한다. [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md) 6단계.
+
+- [ ] 메뉴 Sheepft > Stage Validator로 창이 열린다.
+- [ ] Validate All을 누르면 30개 스테이지가 차례로 검증되고, 그동안 에디터가 멈추지 않는다. 오른쪽 위에 진행 중인 스테이지와 시간이 보인다.
+- [ ] 다 끝나면 30줄이 모두 초록색 OK이고 오른쪽 위에 "30개 통과"가 보인다.
+- [ ] 검증 중에 Cancel을 누르면 멈추고, 남은 줄은 "취소됨"으로 보인다.
+- [ ] 줄을 누르면 아래에 맵, 최적 수순과 기믹, 의도 기믹 분석이 나온다.
+- [ ] 줄의 Solve는 그 스테이지만 다시 검증한다. Prune은 shift 포인트 조합을 찾아 아래에 보여 주고, Copy로 shift 표기를 복사할 수 있다.
+- [ ] `stages.txt`에서 별 3개 기준 숫자를 하나 틀리게 고치고 저장한 뒤 그 줄의 Solve를 누르면, 빨간 줄과 "별3 기준이 최적과 다름"이 보인다. 되돌리면 다시 OK다.
+- [ ] `stages.txt`에 맞지 않는 줄(예: `@intent NoSuchThing`)을 넣고 Validate All을 누르면 줄 번호와 오류 메시지가 보인다.
+- [ ] Copy Report로 복사한 표가 창의 표와 같다.

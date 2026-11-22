@@ -1,6 +1,7 @@
 // Sheepft 스테이지. 표기는 저장소 루트 README.md 10절을 따른다.
-// @로 시작하는 줄은 solver용 표시다 (Solver~/README.md). 설계와 검증 결과는 StageDesign.md에 있다.
-// shift 포인트는 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 것만 뺐다 (Solver~의 prune 명령).
+// @intent, @optimal 줄은 스테이지 검증용 표시다. 이름은 Assets/Scripts/Core/Events/Mechanic.cs의 Mechanic이다.
+// 검증은 Unity 메뉴 Sheepft > Stage Validator로 한다. 설계와 검증 결과는 StageDesign.md에 있다.
+// shift 포인트는 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 것만 뺐다 (검증 창의 Prune 버튼).
 
 # First Steps  shift: R0:RL, R1:RL, R2:RL, C0:UD, C1:UD, C2:UD, C3:UD  제한 7턴  목표 양 1
 # 풀이: R1:R, R1:R, C2:U

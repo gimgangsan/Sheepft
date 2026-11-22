@@ -27,9 +27,15 @@ namespace Sheepft.Core
                     far = p;
                     break;
                 }
-                // 1칸 거리가 막혀 있으면 그 방향은 공격하지 않는다.
+                // 1칸 거리가 막혀 있으면 그 방향은 공격하지 않는다. 그 너머 2칸 거리의 오브젝트는 보지 못한 것이다.
                 // 2칸 거리가 막혀 있으면 1칸 거리의 오브젝트가 밀릴 자리가 없다.
-                if (near == null || far == null) continue;
+                if (near == null)
+                {
+                    var hidden = b.At(Pos.Step(dir).Step(dir));
+                    if (hidden != null && hidden.Objects.Count > 0) b.Mark(Mechanic.GoatSightBlocked);
+                    continue;
+                }
+                if (far == null) continue;
 
                 var beyond = TilePusher.Destination(b, far.Value, dir);
                 if (beyond != null) Add(pushes, b, far.Value, beyond.Value);
@@ -37,10 +43,21 @@ namespace Sheepft.Core
                 if (pushes.Count > before) attacked.Add(dir);
             }
 
-            if (pushes.Count > 0) b.Events.Add(new AttackedEvent(Id, attacked.ToArray()));
+            if (pushes.Count == 0) return;
+            b.Events.Add(new AttackedEvent(Id, attacked.ToArray()));
+            var sheepBefore = b.SheepPositions();
             foreach (var push in pushes)
+            {
                 foreach (var o in push.Key)
+                {
                     b.Move(o, push.Value, MoveCause.Push);
+                    b.Mark(Mechanic.GoatPush);
+                    if (o is Sheep) b.Mark(Mechanic.GoatPushSheep);
+                    else if (o is Wolf) b.Mark(Mechanic.GoatPushWolf);
+                    else if (!o.IsAnimal) b.Mark(Mechanic.GoatPushItem);
+                }
+            }
+            b.MarkSheepMerge(sheepBefore);
         }
 
         private static void Add(List<KeyValuePair<ObjectEntity[], Pos>> pushes, Board b, Pos from, Pos to)

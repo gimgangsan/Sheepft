@@ -119,12 +119,19 @@ namespace Sheepft.Core
                 if (bucket.Filled) return false;
                 b.SetFilled(bucket, true);
                 b.SetWet(bucket, false);
+                b.Mark(Mechanic.BucketFilled);
                 return true;
             }
 
             bool changed = b.SetWet(o, true);
+            if (changed && o is Sheep) b.Mark(Mechanic.SheepWet);
             var animal = o as Animal;
-            if (animal != null && b.SetBurned(animal, false)) changed = true;
+            if (animal != null && b.SetBurned(animal, false))
+            {
+                changed = true;
+                if (o is Sheep) b.Mark(Mechanic.SheepCured);
+                else if (o is Wolf) b.Mark(Mechanic.WolfCured);
+            }
             return changed;
         }
     }
@@ -144,15 +151,28 @@ namespace Sheepft.Core
                 b.SetTerrain(t.Pos, TerrainType.Ash);
                 b.SetFilled(bucket, false);
                 b.SetWet(bucket, true);
+                b.Mark(Mechanic.Extinguish);
                 return true;
             }
 
-            if (o.Wet) return b.SetWet(o, false);
+            if (o.Wet)
+            {
+                if (o is Sheep) b.Mark(Mechanic.SheepDried);
+                return b.SetWet(o, false);
+            }
 
             var animal = o as Animal;
-            if (animal != null) return b.SetBurned(animal, true);
+            if (animal != null)
+            {
+                if (!b.SetBurned(animal, true)) return false;
+                if (o is Sheep) b.Mark(Mechanic.SheepBurned);
+                else if (o is Wolf) b.Mark(Mechanic.WolfBurned);
+                else b.Mark(Mechanic.AnimalBurned);
+                return true;
+            }
 
             b.Remove(o, RemoveCause.Burned);
+            b.Mark(Mechanic.ItemBurned);
             return true;
         }
     }

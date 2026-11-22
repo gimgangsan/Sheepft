@@ -23,7 +23,7 @@ namespace Sheepft.Core
     ///   # 풀이: R1:R, C2:U                                  선택
     ///   @desc 문장                                          선택. 여러 줄이면 공백으로 이어 붙인다
     ///   @stars 3 4                                          선택. 별 3개, 별 2개 기준 턴
-    ///   @intent ..., @optimal ...                           solver 전용. 읽고 버린다
+    ///   @intent ..., @optimal ...                           선택. 스테이지 검증용 기믹 이름(Mechanic)
     ///   .   .   g   .                                       맵. 칸은 공백으로 나눈다
     ///
     /// `//`로 시작하는 줄과 빈 줄은 건너뛴다.
@@ -57,6 +57,7 @@ namespace Sheepft.Core
             public readonly List<string> Desc = new List<string>();
             public bool HasStars;
             public int Star3, Star2;
+            public Mechanic Intent, OptimalIntent;
             public readonly List<string[]> Rows = new List<string[]>();
             public readonly List<int> RowLines = new List<int>();
         }
@@ -174,7 +175,13 @@ namespace Sheepft.Core
                     break;
                 case "@intent":
                 case "@optimal":
-                    // solver 전용. 게임은 쓰지 않는다.
+                    // 스테이지 검증용. 게임 진행에는 쓰지 않는다. 줄이 여럿이면 합친다.
+                    Mechanic m;
+                    string unknown;
+                    if (!MechanicText.TryParse(arg, out m, out unknown))
+                        throw new LevelParseException(no, "모르는 기믹 이름 '" + unknown + "'. Mechanic enum의 이름을 그대로 적는다.");
+                    if (key == "@intent") d.Intent |= m;
+                    else d.OptimalIntent |= m;
                     break;
                 default:
                     throw new LevelParseException(no, "모르는 표시 '" + key + "'. @desc, @stars, @intent, @optimal만 쓴다.");
@@ -214,6 +221,8 @@ namespace Sheepft.Core
             rules.Description = string.Join(" ", d.Desc);
             rules.Star3Turns = d.Star3;
             rules.Star2Turns = d.Star2;
+            rules.Intent = d.Intent;
+            rules.OptimalIntent = d.OptimalIntent;
 
             var board = new Board(tiles, rules);
             board.SeatInitialRiders();

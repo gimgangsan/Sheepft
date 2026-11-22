@@ -3,7 +3,8 @@
 규칙의 기준은 저장소 루트의 `README.md`다. 이 문서는 30개 스테이지의 설계와 solver 검증 결과를 적는다.
 
 - 레벨 데이터: `Assets/Levels/stages.txt` (README 10절 표기)
-- 시뮬레이터, solver, 테스트: `Assets/Levels/Solver~/` (이름 끝의 `~` 때문에 Unity가 불러오지 않는다)
+- 검증: Unity 메뉴 **Sheepft > Stage Validator** (`Assets/Scripts/Tools/`). 게임의 규칙 코드로 돈다.
+  - 2026-11-23에 예전 `Assets/Levels/Solver~/`(규칙을 따로 구현한 시뮬레이터와 명령줄 solver)를 이 창으로 바꾸고 지웠다. 아래 기록의 `check`는 검증 창의 Validate All, `prune`은 Prune 버튼, `solve`는 줄을 눌렀을 때의 상세와 같다. 바꿀 때 30개 모두 같은 결과가 나오는 것을 확인했다.
 
 진행 상태: 1단계(커리큘럼)와 2단계(시뮬레이터와 solver) 승인됨. 3단계(스테이지 제작)는 30개(묶음 1–6)를 모두 만들었고, `check`가 30개 모두 통과한다. 2026-11-14에 노트북에서 고친 README(자동 반응 순서, 늑대 합류, 빈칸 기호, 수 표기)에 solver와 `stages.txt`를 맞췄다. 바뀐 규칙으로 30개를 다시 검증했고 최적 턴과 수순 개수는 모두 그대로다.
 
@@ -74,7 +75,7 @@
 
 ## 2. 시뮬레이터와 solver
 
-사용법과 구조는 `Solver~/README.md`에 있다.
+2026-11-23부터 검증 창(Sheepft > Stage Validator)으로 바뀌었다. 구조와 검증 기준은 저장소 루트의 `STAGE_TOOLS_PLAN.md`에 있다. 아래는 예전 `Solver~` 시절의 기록이다.
 
 - 단위 테스트 98개 통과: shift·순환·빈칸·방향, 지형 턴당 1회, 들불과 확산, 양동이, 늑대(추적·식사·합류·범위), 염소, 말, 소, 정리 절차 순서, 승패 판정 시점, 파서, solver.
 - README 10절의 예시 두 개를 solver로 확인했다. "예시"는 최적 3턴(`R1:R R1:R C2:U`)이고 최적 수순은 하나다. "빈칸 예시"는 최적 2턴(`R0:R C4:U`)이다.

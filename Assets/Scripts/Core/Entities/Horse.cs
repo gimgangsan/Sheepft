@@ -107,10 +107,20 @@ namespace Sheepft.Core
             var dest = basket.Pos;
             b.Remove(basket, RemoveCause.Eaten);
             var rider = Rider(b);
-            if (rider != null) b.Move(rider, dest, MoveCause.HorseEat);
+            if (rider != null)
+            {
+                var sheepBefore = b.SheepPositions();
+                b.Move(rider, dest, MoveCause.HorseEat);
+                b.Mark(Mechanic.HorseDrop);
+                if (rider is Sheep) b.Mark(Mechanic.HorseDropSheep);
+                var carried = rider as FruitBasket;
+                if (carried != null) carried.Carried = true;
+                b.MarkSheepMerge(sheepBefore);
+            }
             b.SetRider(this, -1);
             b.SetTarget(this, -1);
             b.SetFull(this, true);
+            b.Mark(Mechanic.HorseEat);
             return true;
         }
 
@@ -138,6 +148,8 @@ namespace Sheepft.Core
             }
             if (best == null) return false;
             b.SetTarget(this, best.Id);
+            b.Mark(Mechanic.HorseDiscover);
+            if (best.Carried) b.Mark(Mechanic.HorseLure);
             return true;
         }
 
@@ -146,14 +158,27 @@ namespace Sheepft.Core
         /// <summary>목표 바구니를 향해 1칸 걷는다. 등에 태운 것만 데리고 간다(운반).</summary>
         public override void AfterShift(Board b)
         {
-            var dir = StepTowardTarget(b);
+            bool noPath;
+            var dir = StepTowardTarget(b, out noPath);
+            if (noPath) b.Mark(Mechanic.HorseNoPath);
             if (dir == null) return;
 
             var next = Pos.Step(dir.Value);
+            var sheepBefore = b.SheepPositions();
             var rider = Rider(b);
-            if (rider != null) b.Move(rider, next, MoveCause.Carry);
+            if (rider != null)
+            {
+                b.Move(rider, next, MoveCause.Carry);
+                b.Mark(Mechanic.HorseCarry);
+                if (rider is Sheep) b.Mark(Mechanic.HorseCarrySheep);
+                else if (rider is Wolf) b.Mark(Mechanic.HorseCarryWolf);
+                var carried = rider as FruitBasket;
+                if (carried != null) carried.Carried = true;
+            }
             b.Move(this, next, MoveCause.Walk);
             LastWalkDir = dir;
+            b.Mark(Mechanic.HorseWalk);
+            b.MarkSheepMerge(sheepBefore);
         }
 
         private static FruitBasket FirstBasket(Tile t)

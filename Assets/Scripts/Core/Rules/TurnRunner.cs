@@ -15,6 +15,7 @@ namespace Sheepft.Core
             if (!IsAllowed(board, move)) return false;
 
             board.Events.Clear();
+            board.Mechanics = Mechanic.None;
             board.TurnsUsed++;
             board.TurnEnding = false;
             foreach (var o in board.Objects) o.AppliedThisTurn.Clear();
@@ -32,9 +33,14 @@ namespace Sheepft.Core
             if (!RunPhase<Horse>(board)) return true;
             if (!RunPhase<Cow>(board)) return true;
             if (!RunPhase<Wolf>(board)) return true;
-            if (FireSpread.Spread(board)) board.Events.Add(new StepEndEvent());
-            Settler.Settle(board);
-            if (board.Result == GameResult.Lost) return true;
+            // 정리 절차는 바뀌는 것이 없을 때까지 돌므로, 그 뒤로 아무것도 바뀌지 않았으면 다시 돌려도 할 일이 없다.
+            // 그래서 확산이 없었으면 건너뛴다(solver가 한 턴을 수백만 번 돌리므로).
+            if (FireSpread.Spread(board))
+            {
+                board.Events.Add(new StepEndEvent());
+                Settler.Settle(board);
+                if (board.Result == GameResult.Lost) return true;
+            }
             if (TryWin(board)) return true;
 
             // 기절과 식사는 2단계 승리 판정 뒤에 풀린다. 풀린 것이 있으면 정리 절차를 한 번 더 돌린다.
@@ -58,19 +64,30 @@ namespace Sheepft.Core
         /// </summary>
         private static bool RunPhase<T>(Board board) where T : Animal
         {
-            var actors = new List<T>();
+            List<T> actors = null;
             foreach (var o in board.Objects)
             {
                 var actor = o as T;
-                if (actor != null) actors.Add(actor);
+                if (actor == null) continue;
+                if (actors == null) actors = new List<T>();
+                actors.Add(actor);
             }
+            if (actors == null) return true;
 
             foreach (var actor in actors)
             {
-                if (actor.Removed || actor.IsIncapacitated(board)) continue;
+                if (actor.Removed) continue;
+                if (actor.IsIncapacitated(board))
+                {
+                    if (actor.IsHeldByRide(board)) board.Mark(Mechanic.RideHeld);
+                    continue;
+                }
+                // 상태를 바꾸는 일은 모두 Board를 거쳐 이벤트를 남긴다. 이벤트가 없으면 바뀐 것이 없으므로
+                // 정리 절차를 다시 돌려도 할 일이 없다(바로 앞의 정리 절차가 끝까지 돌았다).
                 int before = board.Events.Count;
                 actor.AfterShift(board);
-                if (board.Events.Count > before) board.Events.Add(new StepEndEvent());
+                if (board.Events.Count == before) continue;
+                board.Events.Add(new StepEndEvent());
                 Settler.Settle(board);
                 if (board.Result == GameResult.Lost) return false;
             }

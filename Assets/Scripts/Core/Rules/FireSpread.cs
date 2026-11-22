@@ -38,6 +38,7 @@ namespace Sheepft.Core
                         {
                             if (!BurnsInSpread(o)) continue;
                             board.Remove(o, RemoveCause.Burned);
+                            board.Mark(Mechanic.ItemBurned);
                             burn = true;
                             changed = true;
                         }
@@ -51,7 +52,11 @@ namespace Sheepft.Core
 
             foreach (var p in ignite)
             {
+                var before = board.At(p).Terrain.Type;
+                if (before == TerrainType.Grass) board.Mark(Mechanic.GrassBurned);
+                else if (before == TerrainType.Fence || before == TerrainType.Tree) board.Mark(Mechanic.ObstacleBurned);
                 board.SetTerrain(p, TerrainType.Fire);
+                board.Mark(Mechanic.FireSpread);
                 changed = true;
             }
             return changed;

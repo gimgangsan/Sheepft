@@ -414,5 +414,5 @@ shift 포인트(3절)는 "행이나 열 하나 + 방향 하나"다. `줄:방향`
 
 ## 11. 후속 작업
 
-- 스테이지 30개는 `Assets/Levels/stages.txt`에 이 표기법으로 들어 있고, `Assets/Levels/Solver~`의 solver로 검증했다. 설계 기록은 `Assets/Levels/StageDesign.md`에 있다. 레벨 파일은 이 절의 표기 외에 `@desc`(설명), `@stars`(별 기준), `@intent`·`@optimal`(solver용) 줄을 쓴다.
+- 스테이지 30개는 `Assets/Levels/stages.txt`에 이 표기법으로 들어 있고, Unity 메뉴 Sheepft > Stage Validator(게임 규칙 코드로 도는 solver)로 검증한다. 설계 기록은 `Assets/Levels/StageDesign.md`에 있다. 레벨 파일은 이 절의 표기 외에 `@desc`(설명), `@stars`(별 기준), `@intent`·`@optimal`(검증용) 줄을 쓴다.
 - 보류 요소(사다리, 슈퍼 양동이)는 다음 버전에서 이 반응 분류(종료 후 반응, 자동 반응, 겹침 상호작용)에 맞춰 정의한다.

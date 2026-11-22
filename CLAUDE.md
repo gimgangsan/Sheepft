@@ -25,22 +25,24 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Sprites/UI/` | 버튼, 아이콘, 표시 등 UI 그래픽. 메뉴 배경(`menu_background.aseprite`, 1920×360)과 로고도 여기에 둔다 |
 | `Assets/Sprites/Effects/` | 반응 연출 이펙트: 물보라, 수증기, 연기, 충격파 등 |
 | `Assets/Scripts/` | C# 스크립트. `Core/`(게임 규칙, 순수 C#)와 `Game/`(화면·입력)으로 나눈다 |
+| `Assets/Scripts/Tools/` | 에디터 전용 도구 (asmdef `Sheepft.Tools`, 빌드에 안 들어감). 스테이지 solver·검증기·prune(`Solver/`)과 검증 창. 게임 규칙은 `Core/`를 그대로 쓴다 |
 | `Assets/Tests/` | 단위 테스트 (Unity Test Framework, `EditMode/`) |
 | `Assets/Prefabs/` | 프리팹. `GameRoot.prefab`(목록과 진행), `Entities/`(오브젝트), `Terrain/`(지형), `Effects/`(이펙트), `UI/`(Canvas UI, 화살표, 줄 표시) |
 | `Assets/Scenes/` | 씬 |
 | `Assets/Levels/` | 레벨 데이터 `stages.txt` (README 10절 표기법), 스테이지 설계 문서 `StageDesign.md` |
-| `Assets/Levels/Solver~/` | 시뮬레이터, solver, 단위 테스트 (C#, .NET SDK 필요). 사용법은 그 폴더의 `README.md` |
 | `Assets/Settings/` | URP 등 렌더링 설정. 요청이 없으면 건드리지 않는다 |
 | `Assets/Fonts/` | 폰트. 인게임 글자와 숫자는 모두 Agrave Pro(`AgravePro-Regular.ttf`, `AgravePro-Bold.ttf`, SIL OFL)를 쓴다. 라이선스 `AgravePro-OFL.txt`를 함께 둔다 |
 | `Assets/Data/` | 조정값 ScriptableObject (이동 시간, 간격 등) |
 | `Assets/TextMesh Pro/` | TMP 필수 리소스. Unity가 만든다. 직접 고치지 않는다 |
 
 - 게임에 들어가지 않는 파일(미리보기 이미지, 임시 스크립트, 테스트 출력)은 `Assets/` 안에 두지 않는다. `Assets/` 안의 파일은 Unity가 모두 불러온다.
-  - 예외: 이름이 `~`로 끝나는 폴더는 Unity가 불러오지 않는다. `Solver~`가 그렇다. 이 폴더에는 `.meta`가 생기지 않는다.
+  - 예외: 이름이 `~`로 끝나는 폴더는 Unity가 불러오지 않는다. 이 폴더에는 `.meta`가 생기지 않는다.
 - 문서는 저장소 루트에 둔다. 스테이지 설계 문서만 레벨 데이터 옆에 둔다.
-- 레벨을 만들거나 고치면 `Solver~`의 `check` 명령으로 검증한다.
-- 레벨의 shift 포인트는 최소한으로 줄이지 않는다. 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 포인트만 `prune` 명령으로 찾아 뺀다. 여러 개를 빼야 하면 포인트 대신 맵의 지형을 고친다.
-  - 예외: 21–30번은 지형을 고치는 대신 `prune`이 알려 주는 포인트를 여러 개 빼도 된다. "우회해 없음" 기준은 그대로다. 뺀 포인트와 이유는 `StageDesign.md`에 적는다.
+- 레벨을 만들거나 고치면 Unity 메뉴 **Sheepft > Stage Validator**의 Validate All로 검증한다. 게임 규칙 코드(`Core/`)로 돌기 때문에 검증 결과가 실제 게임과 같다.
+  - Claude는 MCP로 EditMode 테스트 카테고리 `StageCheck`(`StageCheckTests`, 스테이지마다 하나)를 골라 돌린다. 평소 테스트 실행에는 빠져 있다(`[Explicit]`, 30개에 2분쯤).
+  - 검증 기준(`@intent`, `@optimal`, 별 기준 등)과 결과 보는 법은 [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md)와 `Assets/Scripts/Tools/Solver/StageChecker.cs`에 있다.
+- 레벨의 shift 포인트는 최소한으로 줄이지 않는다. 모든 줄을 양방향으로 연 뒤, 의도와 다른 해를 만드는 포인트만 검증 창의 `Prune` 버튼으로 찾아 뺀다. 여러 개를 빼야 하면 포인트 대신 맵의 지형을 고친다.
+  - 예외: 21–30번은 지형을 고치는 대신 Prune이 알려 주는 포인트를 여러 개 빼도 된다. "우회해 없음" 기준은 그대로다. 뺀 포인트와 이유는 `StageDesign.md`에 적는다.
 
 ## 스프라이트 규칙
 
@@ -151,7 +153,7 @@ Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.js
 - 프리팹의 스프라이트 목록(`SpriteCatalog.sheets`)은 손으로 고치지 않는다.
 - 물·풀·울타리 프리팹에는 Animator를 붙이지 않는다. 이웃에 따라 `BoardView`가 프레임을 골라 넣는다.
 - Play하지 않고 스테이지를 보려면 메뉴 **Sheepft > Preview Stage**를 쓴다. 씬에 저장되지 않는다.
-- 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다.
+- 에디터 전용 코드는 `Assets/Scripts/Game/` 안에서 `#if UNITY_EDITOR`로 감싼다. 스테이지 도구처럼 게임 화면과 상관없는 에디터 코드는 `Assets/Scripts/Tools/`(Editor 전용 asmdef)에 둔다.
 
 ## 테스트
 

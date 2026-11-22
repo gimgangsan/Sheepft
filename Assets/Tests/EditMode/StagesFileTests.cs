@@ -44,6 +44,37 @@ namespace Sheepft.Tests
             }
         }
 
+        /// <summary>
+        /// 풀이 줄(`# 풀이:`)의 수순을 게임 규칙으로 실제로 두어 본다. 마지막 수에서 승리해야 하고,
+        /// 풀이는 최적해이므로 길이가 별 3개 기준과 같아야 한다.
+        /// </summary>
+        [Test]
+        public void StagesFile_EverySolutionWinsWithGameRules()
+        {
+            var boards = LevelParser.ParseAll(ReadStagesText());
+            var failures = new List<string>();
+            for (int i = 0; i < boards.Count; i++)
+            {
+                var board = boards[i].Clone();
+                var rules = board.Rules;
+                string where = (i + 1) + "번 '" + rules.Name + "': ";
+                for (int k = 0; k < rules.Solution.Count; k++)
+                {
+                    if (board.Result != GameResult.InProgress)
+                    {
+                        failures.Add(where + (k + 1) + "번째 수 전에 판이 끝났다 (" + board.Result + ")");
+                        break;
+                    }
+                    TurnRunner.PlayTurn(board, rules.Solution[k]);
+                }
+                if (board.Result != GameResult.Won)
+                    failures.Add(where + "풀이 " + string.Join(", ", rules.Solution) + " 로 승리하지 못했다 (" + board.Result + ")");
+                else if (rules.Solution.Count != rules.Star3Turns)
+                    failures.Add(where + "풀이 길이 " + rules.Solution.Count + "턴이 별 3개 기준 " + rules.Star3Turns + "턴과 다르다");
+            }
+            Assert.IsEmpty(failures, string.Join("\n", failures));
+        }
+
         [Test]
         public void StagesFile_GridsSurviveRoundTrip()
         {

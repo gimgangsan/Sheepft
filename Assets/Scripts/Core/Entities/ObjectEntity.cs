@@ -49,6 +49,12 @@ namespace Sheepft.Core
         public virtual bool IsIncapacitated(Board b) => Burned || IsRiding(b);
 
         /// <summary>
+        /// 탑승만 아니었으면 종료 후 반응을 했을 상태인가. 검증용 기믹 RideHeld를 켤 때 쓴다.
+        /// 다른 까닭(화상, 기절, 식사, 목표 없음)으로도 행동하지 않을 것이면 false다.
+        /// </summary>
+        public virtual bool IsHeldByRide(Board b) => !Burned && IsRiding(b);
+
+        /// <summary>
         /// 탑승. 발견 상태인 말의 등에 타고 있다(Horse.RiderId). 같은 칸에 있기만 한 다른 동물은 탑승이 아니다.
         /// </summary>
         public bool IsRiding(Board b)

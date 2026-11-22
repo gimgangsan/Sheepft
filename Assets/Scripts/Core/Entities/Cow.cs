@@ -29,6 +29,7 @@ namespace Sheepft.Core
                 b.Remove(basket, RemoveCause.Eaten);
                 b.SetTarget(this, -1);
                 b.SetFull(this, true);
+                b.Mark(Mechanic.CowEat);
                 return true;
             }
 
@@ -63,6 +64,8 @@ namespace Sheepft.Core
             }
             if (best == null) return false;
             b.SetTarget(this, best.Id);
+            b.Mark(Mechanic.CowSmell);
+            if (best.Carried) b.Mark(Mechanic.CowLure);
             return true;
         }
 
@@ -74,13 +77,28 @@ namespace Sheepft.Core
         /// </summary>
         public override void AfterShift(Board b)
         {
-            var dir = StepTowardTarget(b);
+            bool noPath;
+            var dir = StepTowardTarget(b, out noPath);
+            if (noPath) b.Mark(Mechanic.CowNoPath);
             if (dir == null) return;
 
             var next = Pos.Step(dir.Value);
-            TilePusher.Push(b, next, dir.Value, MoveCause.CowPush);
+            var sheepBefore = b.SheepPositions();
+            var pushed = b.At(next).Objects.ToArray();
+            if (TilePusher.Push(b, next, dir.Value, MoveCause.CowPush))
+            {
+                foreach (var o in pushed)
+                {
+                    b.Mark(Mechanic.CowPush);
+                    if (o is Sheep) b.Mark(Mechanic.CowPushSheep);
+                    else if (o is Wolf) b.Mark(Mechanic.CowPushWolf);
+                    else if (o is FruitBasket) b.Mark(Mechanic.CowPushBasket);
+                }
+                b.MarkSheepMerge(sheepBefore);
+            }
             b.Move(this, next, MoveCause.Walk);
             LastWalkDir = dir;
+            b.Mark(Mechanic.CowWalk);
         }
     }
 }

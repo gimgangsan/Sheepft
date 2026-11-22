@@ -5,11 +5,14 @@ using System.Text;
 namespace Sheepft.Core
 {
     /// <summary>
-    /// 한 턴 동안 일어난 일. 해법이 의도한 기믹을 썼는지 판정하는 데 쓴다.
-    /// 레벨 파일의 @intent 줄에 이 이름을 그대로 적는다.
+    /// 한 턴 동안 쓰인 기믹. 스테이지 검증기가 "해법이 의도한 기믹을 썼는가"를 판정하는 데 쓴다.
+    /// 레벨 파일의 `@intent`, `@optimal` 줄에 이 이름을 그대로 적는다.
+    ///
+    /// 화면 재생용 GameEvent와 달리, "기절해서 잡지 않았다"처럼 일어나지 않은 일도 담는다.
+    /// 규칙 코드가 그 판단을 내리는 자리에서 Board.Mark로 켠다. 화면은 읽지 않는다.
     /// </summary>
     [Flags]
-    public enum Ev : ulong
+    public enum Mechanic : ulong
     {
         None = 0,
 
@@ -83,48 +86,54 @@ namespace Sheepft.Core
         CowLure = 1UL << 54,        // 말이 옮긴 바구니의 냄새를 맡음
     }
 
-    public static class EvText
+    public static class MechanicText
     {
-        public static string Describe(Ev events)
+        /// <summary>켜진 기믹 이름을 쉼표로 잇는다. 없으면 "(none)".</summary>
+        public static string Describe(Mechanic mechanics)
         {
-            if (events == Ev.None) return "(없음)";
+            if (mechanics == Mechanic.None) return "(none)";
             var sb = new StringBuilder();
-            for (int i = 0; i < 64; i++)
+            foreach (var one in Split(mechanics))
             {
-                ulong bit = 1UL << i;
-                if (((ulong)events & bit) == 0) continue;
                 if (sb.Length > 0) sb.Append(", ");
-                sb.Append(((Ev)bit).ToString());
+                sb.Append(one.ToString());
             }
             return sb.ToString();
         }
 
-        public static bool TryParse(string text, out Ev result)
+        /// <summary>공백이나 쉼표로 나눈 이름들을 읽는다. 대소문자는 가린다. 모르는 이름이 있으면 false와 그 이름.</summary>
+        public static bool TryParse(string text, out Mechanic result, out string unknown)
         {
-            result = Ev.None;
+            result = Mechanic.None;
+            unknown = null;
             var parts = text.Split(new[] { ' ', ',', '\t' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var p in parts)
             {
-                Ev one;
-                if (!Enum.TryParse(p, true, out one) || !IsSingleFlag(one)) return false;
+                Mechanic one;
+                if (!Enum.TryParse(p, false, out one) || !IsSingle(one) || one.ToString() != p)
+                {
+                    unknown = p;
+                    return false;
+                }
                 result |= one;
             }
             return true;
         }
 
-        private static bool IsSingleFlag(Ev e)
-        {
-            ulong v = (ulong)e;
-            return v != 0 && (v & (v - 1)) == 0;
-        }
-
-        public static IEnumerable<Ev> Split(Ev events)
+        /// <summary>켜진 기믹을 하나씩. 비트 순서다.</summary>
+        public static IEnumerable<Mechanic> Split(Mechanic mechanics)
         {
             for (int i = 0; i < 64; i++)
             {
                 ulong bit = 1UL << i;
-                if (((ulong)events & bit) != 0) yield return (Ev)bit;
+                if (((ulong)mechanics & bit) != 0) yield return (Mechanic)bit;
             }
+        }
+
+        private static bool IsSingle(Mechanic m)
+        {
+            ulong v = (ulong)m;
+            return v != 0 && (v & (v - 1)) == 0;
         }
     }
 }
