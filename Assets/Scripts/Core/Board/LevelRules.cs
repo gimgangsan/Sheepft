@@ -34,5 +34,8 @@ namespace Sheepft.Core
 
         /// <summary>`@optimal`. 최적 길이의 모든 해에 나와야 하는 기믹. 더 긴 해에는 없어도 된다. 스테이지 검증용이다.</summary>
         public Mechanic OptimalIntent;
+
+        /// <summary>헤더 바로 위의 `//` 줄(`//`까지 그대로). 스테이지 에디터가 파일을 다시 쓸 때 지킨다.</summary>
+        public IReadOnlyList<string> Comments = Array.Empty<string>();
     }
 }

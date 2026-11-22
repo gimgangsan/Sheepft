@@ -16,6 +16,18 @@ namespace Sheepft.Core
         }
     }
 
+    /// <summary>파일 하나를 주석까지 읽은 결과. LevelParser.ParseFile이 만든다.</summary>
+    public sealed class LevelFile
+    {
+        /// <summary>첫 헤더보다 앞의 `//` 줄. `//`까지 그대로다.</summary>
+        public readonly List<string> Comments = new List<string>();
+
+        public readonly List<Board> Levels = new List<Board>();
+
+        /// <summary>붙일 스테이지가 없어 다시 쓸 때 사라지는 주석의 줄 번호(1부터).</summary>
+        public readonly List<int> DroppedCommentLines = new List<int>();
+    }
+
     /// <summary>
     /// README 10절 표기법의 레벨 파일을 읽는다. 한 파일에 레벨을 여러 개 이어 적을 수 있다.
     ///
@@ -58,6 +70,7 @@ namespace Sheepft.Core
             public bool HasStars;
             public int Star3, Star2;
             public Mechanic Intent, OptimalIntent;
+            public List<string> Comments = new List<string>();
             public readonly List<string[]> Rows = new List<string[]>();
             public readonly List<int> RowLines = new List<int>();
         }
@@ -74,17 +87,46 @@ namespace Sheepft.Core
         /// <summary>파일 하나의 모든 레벨을 적힌 순서대로 읽는다.</summary>
         public static List<Board> ParseAll(string text)
         {
+            return ParseFile(text).Levels;
+        }
+
+        /// <summary>
+        /// 파일 하나를 주석까지 읽는다. 스테이지 에디터가 파일을 다시 쓸 때 주석을 지키는 데 쓴다.
+        /// 첫 헤더보다 앞의 `//` 줄은 파일의 주석(LevelFile.Comments), 앞 스테이지가 끝난 뒤 다음 헤더 바로 위까지의
+        /// `//` 줄은 그 스테이지의 주석(LevelRules.Comments)이다. 그 밖의 자리(헤더와 맵 사이, 맵 중간, 파일 끝)의
+        /// 주석은 붙일 곳이 없어 DroppedCommentLines에 줄 번호만 남긴다.
+        /// </summary>
+        public static LevelFile ParseFile(string text)
+        {
             if (text == null) throw new ArgumentNullException(nameof(text));
             if (text.Length > 0 && text[0] == '﻿') text = text.Substring(1);
 
-            var result = new List<Board>();
+            var file = new LevelFile();
+            var result = file.Levels;
+            var pending = new List<KeyValuePair<int, string>>(); // 아직 붙일 곳을 모르는 주석 (줄 번호, 내용)
             Draft cur = null;
             var lines = text.Replace("\r", "").Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
                 int no = i + 1;
                 string line = lines[i].Trim();
-                if (line.Length == 0 || line.StartsWith("//", StringComparison.Ordinal)) continue;
+                if (line.Length == 0) continue;
+                if (line.StartsWith("//", StringComparison.Ordinal))
+                {
+                    pending.Add(new KeyValuePair<int, string>(no, line));
+                    continue;
+                }
+
+                // 모아 둔 주석을 붙일 곳을 정한다. 헤더 바로 위면 그 스테이지(첫 헤더 위면 파일), 아니면 붙일 곳이 없다.
+                bool isHeader = line[0] == '#' && !SolutionLine.IsMatch(line) && line.Contains("shift");
+                var headerComments = new List<string>();
+                foreach (var c in pending)
+                {
+                    if (!isHeader) file.DroppedCommentLines.Add(c.Key);
+                    else if (cur == null) file.Comments.Add(c.Value);
+                    else headerComments.Add(c.Value);
+                }
+                pending.Clear();
 
                 // 헤더, 풀이 줄, 돌로 시작하는 맵 줄이 모두 `#`으로 시작한다.
                 // `풀이`와 `shift`라는 말로 구분한다.
@@ -104,6 +146,7 @@ namespace Sheepft.Core
                     {
                         if (cur != null) result.Add(Build(cur));
                         cur = ParseHeader(line, no);
+                        cur.Comments = headerComments;
                         continue;
                     }
                 }
@@ -121,7 +164,8 @@ namespace Sheepft.Core
                 cur.RowLines.Add(no);
             }
             if (cur != null) result.Add(Build(cur));
-            return result;
+            foreach (var c in pending) file.DroppedCommentLines.Add(c.Key); // 파일 끝의 주석
+            return file;
         }
 
         private static Draft ParseHeader(string line, int no)
@@ -223,6 +267,7 @@ namespace Sheepft.Core
             rules.Star2Turns = d.Star2;
             rules.Intent = d.Intent;
             rules.OptimalIntent = d.OptimalIntent;
+            rules.Comments = d.Comments.ToArray();
 
             var board = new Board(tiles, rules);
             board.SeatInitialRiders();

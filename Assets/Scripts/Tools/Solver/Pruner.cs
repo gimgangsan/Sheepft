@@ -127,7 +127,7 @@ namespace Sheepft.Tools
             for (int p = 0; p < points.Count; p++)
                 if ((mask & (1UL << p)) == 0) remaining.Add(points[p]);
             if (remaining.Count == 0) { verdict.Why = "남은 포인트가 없다"; return verdict; }
-            verdict.Spec = Spec(level, remaining);
+            verdict.Spec = LevelWriter.ShiftSpec(remaining);
 
             // 최적 턴 수를 먼저 구하고, 제한 턴을 최적 + 여유로 잡아 다시 검사한다.
             var variant = level.Clone();
@@ -156,23 +156,5 @@ namespace Sheepft.Tools
             return verdict;
         }
 
-        /// <summary>헤더에 쓰는 shift 표기. 행 먼저, 행은 `RL`, 열은 `UD` 순서로 적는다. 예: `R0:RL, C2:U`</summary>
-        public static string Spec(Board level, IEnumerable<ShiftPoint> points)
-        {
-            var set = new HashSet<ShiftPoint>(points);
-            var sb = new StringBuilder();
-            for (int r = 0; r < level.Height; r++)
-                Append(sb, "R" + r, set.Contains(new ShiftPoint(Axis.Row, r, Dir.Right)) ? "R" : "", set.Contains(new ShiftPoint(Axis.Row, r, Dir.Left)) ? "L" : "");
-            for (int c = 0; c < level.Width; c++)
-                Append(sb, "C" + c, set.Contains(new ShiftPoint(Axis.Col, c, Dir.Up)) ? "U" : "", set.Contains(new ShiftPoint(Axis.Col, c, Dir.Down)) ? "D" : "");
-            return sb.ToString();
-        }
-
-        private static void Append(StringBuilder sb, string line, string a, string b)
-        {
-            if (a.Length + b.Length == 0) return;
-            if (sb.Length > 0) sb.Append(", ");
-            sb.Append(line).Append(':').Append(a).Append(b);
-        }
     }
 }

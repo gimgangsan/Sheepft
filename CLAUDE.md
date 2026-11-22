@@ -25,7 +25,7 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Sprites/UI/` | 버튼, 아이콘, 표시 등 UI 그래픽. 메뉴 배경(`menu_background.aseprite`, 1920×360)과 로고도 여기에 둔다 |
 | `Assets/Sprites/Effects/` | 반응 연출 이펙트: 물보라, 수증기, 연기, 충격파 등 |
 | `Assets/Scripts/` | C# 스크립트. `Core/`(게임 규칙, 순수 C#)와 `Game/`(화면·입력)으로 나눈다 |
-| `Assets/Scripts/Tools/` | 에디터 전용 도구 (asmdef `Sheepft.Tools`, 빌드에 안 들어감). 스테이지 solver·검증기·prune(`Solver/`)과 검증 창. 게임 규칙은 `Core/`를 그대로 쓴다 |
+| `Assets/Scripts/Tools/` | 에디터 전용 도구 (asmdef `Sheepft.Tools`, 빌드에 안 들어감). 스테이지 solver·검증기·prune(`Solver/`), 검증 창, 스테이지 에디터(`StageEditor/`). 게임 규칙은 `Core/`를 그대로 쓴다 |
 | `Assets/Tests/` | 단위 테스트 (Unity Test Framework, `EditMode/`) |
 | `Assets/Prefabs/` | 프리팹. `GameRoot.prefab`(목록과 진행), `Entities/`(오브젝트), `Terrain/`(지형), `Effects/`(이펙트), `UI/`(Canvas UI, 화살표, 줄 표시) |
 | `Assets/Scenes/` | 씬 |
@@ -38,6 +38,8 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 - 게임에 들어가지 않는 파일(미리보기 이미지, 임시 스크립트, 테스트 출력)은 `Assets/` 안에 두지 않는다. `Assets/` 안의 파일은 Unity가 모두 불러온다.
   - 예외: 이름이 `~`로 끝나는 폴더는 Unity가 불러오지 않는다. 이 폴더에는 `.meta`가 생기지 않는다.
 - 문서는 저장소 루트에 둔다. 스테이지 설계 문서만 레벨 데이터 옆에 둔다.
+- 사람은 스테이지를 Unity 메뉴 **Sheepft > Stage Editor**에서 고친다(맵 그리기, 헤더, 추가·복제·삭제·순서 바꾸기, 스테이지별 Validate·Prune·Solver로 채우기·▶ Play). 에디터는 저장할 때 `stages.txt` 전체를 정해진 모양으로 다시 쓴다. Claude가 `stages.txt`를 텍스트로 고쳐도 되고, 그 모양을 따를 필요는 없다(에디터가 읽을 수 있으면 된다).
+  - 에디터로 저장하면 게임의 진행 기록(별, 열린 스테이지)이 초기화된다(`stages.txt` 지문이 바뀌므로). 스테이지 순서가 바뀌어도 엉뚱한 별이 남지 않게 하려는 것이다.
 - 레벨을 만들거나 고치면 Unity 메뉴 **Sheepft > Stage Validator**의 Validate All로 검증한다. 게임 규칙 코드(`Core/`)로 돌기 때문에 검증 결과가 실제 게임과 같다.
   - Claude는 MCP로 EditMode 테스트 카테고리 `StageCheck`(`StageCheckTests`, 스테이지마다 하나)를 골라 돌린다. 평소 테스트 실행에는 빠져 있다(`[Explicit]`, 30개에 2분쯤).
   - 검증 기준(`@intent`, `@optimal`, 별 기준 등)과 결과 보는 법은 [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md)와 `Assets/Scripts/Tools/Solver/StageChecker.cs`에 있다.

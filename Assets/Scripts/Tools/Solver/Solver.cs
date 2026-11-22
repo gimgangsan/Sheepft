@@ -168,6 +168,7 @@ namespace Sheepft.Tools
                 Star2Turns = src.Star2Turns,
                 Intent = src.Intent,
                 OptimalIntent = src.OptimalIntent,
+                Comments = src.Comments,
             };
         }
 

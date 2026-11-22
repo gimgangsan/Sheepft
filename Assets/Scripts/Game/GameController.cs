@@ -97,9 +97,22 @@ namespace Sheepft.Game
             menu.Init(catalog, prefabs, cam, font, stageCount);
             menu.StageChosen += LoadStage;
 
+#if UNITY_EDITOR
+            // 스테이지 에디터의 ▶ Play: 메뉴를 건너뛰고 그 스테이지를 연다. 넘겨받은 값은 한 번만 쓴다.
+            int editorStage = UnityEditor.SessionState.GetInt(EditorPlayStageKey, -1);
+            UnityEditor.SessionState.EraseInt(EditorPlayStageKey);
+            if (editorStage >= 0)
+            {
+                LoadStage(Mathf.Clamp(editorStage, 0, stageCount - 1));
+                return;
+            }
+#endif
             if (openMenuOnStart) OpenMenu(MenuScreen.Title, SaveData.LastStage(stageCount));
             else LoadStage(Mathf.Clamp(startStage, 0, stageCount - 1));
         }
+
+        /// <summary>스테이지 에디터가 Play 전에 SessionState에 적어 두는 스테이지 번호(0부터)의 키. 에디터 전용.</summary>
+        public const string EditorPlayStageKey = "Sheepft.EditorPlayStage";
 
         private Transform NewChild(string childName)
         {

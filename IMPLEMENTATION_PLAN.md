@@ -278,7 +278,7 @@ Settle():
 | --- | --- | --- |
 | `Assets/Scripts/Core/` | `Sheepft.Core` (`noEngineReferences: true`) | 맵, 엔티티, 규칙, 레벨 파서. UnityEngine을 쓰지 않는다 |
 | `Assets/Scripts/Game/` | `Sheepft.Game` | View, 입력, HUD, 씬 진행 |
-| `Assets/Scripts/Tools/` | `Sheepft.Tools` (Editor 전용) | 스테이지 solver·검증기·prune과 검증 창(Sheepft > Stage Validator). 규칙은 `Core`를 그대로 쓴다. [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md) |
+| `Assets/Scripts/Tools/` | `Sheepft.Tools` (Editor 전용, `Core`·`Game` 참조) | 스테이지 solver·검증기·prune, 검증 창(Sheepft > Stage Validator), 스테이지 에디터(Sheepft > Stage Editor). 규칙은 `Core`를 그대로 쓴다. [STAGE_TOOLS_PLAN.md](STAGE_TOOLS_PLAN.md) |
 | `Assets/Tests/EditMode/` | `Sheepft.Tests` (Editor 전용) | Core·Tools 단위 테스트 |
 | `Assets/Levels/` | | 레벨 텍스트 파일 (`TextAsset`) |
 

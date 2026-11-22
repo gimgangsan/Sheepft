@@ -2,7 +2,8 @@
     "name": "Sheepft.Tools",
     "rootNamespace": "Sheepft.Tools",
     "references": [
-        "Sheepft.Core"
+        "Sheepft.Core",
+        "Sheepft.Game"
     ],
     "includePlatforms": [
         "Editor"
