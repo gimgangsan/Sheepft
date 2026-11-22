@@ -735,6 +735,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09f496d14983ad341bff9d5bd7622b1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.GameController
+  openMenuOnStart: 1
   startStage: 0
   ui: {fileID: 0}
 --- !u!114 &2289199196232796679
