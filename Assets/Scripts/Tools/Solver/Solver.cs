@@ -134,10 +134,11 @@ namespace Sheepft.Tools
             return report;
         }
 
-        /// <summary>수순을 `R1:R C2:U`처럼 적는다.</summary>
+        /// <summary>수순을 `R1:R, C2:U`처럼 적는다.</summary>
         public static string MovesText(IEnumerable<ShiftPoint> moves)
         {
-            return moves == null ? "" : string.Join(" ", moves);
+            // 풀이 줄(`# 풀이: R1:R, C2:U`)과 같은 모양이라 그대로 복사해 붙일 수 있다.
+            return moves == null ? "" : string.Join(", ", moves);
         }
 
         /// <summary>

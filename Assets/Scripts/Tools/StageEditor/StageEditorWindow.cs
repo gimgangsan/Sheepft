@@ -60,6 +60,7 @@ namespace Sheepft.Tools
         [NonSerialized] private CancellationTokenSource cts;
         [NonSerialized] private volatile bool busy;
         [NonSerialized] private bool busyShown; // Layout 이벤트 때의 busy. 화면 구성은 이 값으로 정한다
+        [NonSerialized] private int focusStage = -1, focusCount = -1; // 글자 칸 포커스를 풀 때 비교하는 지난 스테이지
         [NonSerialized] private volatile string busyLabel;
         [NonSerialized] private string resultText = "";
         [NonSerialized] private Action pendingApply; // 백그라운드 결과를 메인 스레드에서 적용
@@ -109,7 +110,7 @@ namespace Sheepft.Tools
         {
             if (file == null) return;
             selected = Mathf.Clamp(selected, 0, Mathf.Max(0, file.stages.Count - 1));
-            GUI.FocusControl(null);
+            ClearTextFocus();
             Changed();
         }
 
@@ -236,7 +237,17 @@ namespace Sheepft.Tools
         {
             if (sprites == null) sprites = new StageSprites();
             // 검증 중인지는 백그라운드 스레드가 바꾸므로, 화면 구성에 쓰는 값은 Layout 이벤트 때 한 번 정한다.
-            if (Event.current.type == EventType.Layout) busyShown = busy;
+            if (Event.current.type == EventType.Layout)
+            {
+                busyShown = busy;
+                // 어떤 길로든(선택, 옮기기, 삭제, Undo) 보이는 스테이지가 바뀌었으면 글자 칸의 포커스를 푼다.
+                if (focusStage != selected || focusCount != (file != null ? file.stages.Count : 0))
+                {
+                    ClearTextFocus();
+                    focusStage = selected;
+                    focusCount = file != null ? file.stages.Count : 0;
+                }
+            }
 
             if (file == null)
             {
@@ -367,8 +378,19 @@ namespace Sheepft.Tools
             selected = Mathf.Clamp(index, 0, Mathf.Max(0, file.stages.Count - 1));
             moveTarget = selected + 1;
             resultText = "";
-            GUI.FocusControl(null);
+            ClearTextFocus();
             Repaint();
+        }
+
+        /// <summary>
+        /// 글자 칸의 입력 포커스를 푼다. 포커스가 남은 채로 다른 스테이지를 고르면, 같은 자리의 글자 칸(이름, 설명 등)이
+        /// 앞 스테이지에서 고치던 글자를 그대로 보여 준다(Unity가 편집 중인 글자를 칸 번호로 기억하므로).
+        /// GUI.FocusControl은 OnGUI 안에서만 들으므로, 미뤄 둔 동작에서도 듣는 이쪽을 쓴다.
+        /// </summary>
+        private static void ClearTextFocus()
+        {
+            GUIUtility.keyboardControl = 0;
+            EditorGUIUtility.editingTextField = false;
         }
 
         private void DeleteSelected()

@@ -26,7 +26,7 @@ namespace Sheepft.Tests
         {
             var r = Solver.Solve(LevelParser.Parse(ReadmeExample));
             Assert.AreEqual(3, r.OptimalTurns);
-            CollectionAssert.Contains(r.Solutions.Select(s => s.MovesText).ToList(), "R1:R R1:R C2:U");
+            CollectionAssert.Contains(r.Solutions.Select(s => s.MovesText).ToList(), "R1:R, R1:R, C2:U");
             Assert.IsTrue(r.Solutions.All(s => (s.Mechanics & Mechanic.SheepMerge) != 0));
         }
 
@@ -36,7 +36,7 @@ namespace Sheepft.Tests
             var r = Solver.Solve(LevelParser.Parse(ReadmeVoidExample));
             Assert.AreEqual(2, r.OptimalTurns);
             Assert.AreEqual(1, r.OptimalSequences);
-            Assert.AreEqual("R0:R C4:U", r.Solutions[0].MovesText);
+            Assert.AreEqual("R0:R, C4:U", r.Solutions[0].MovesText);
             Assert.AreNotEqual(Mechanic.None, r.Solutions[0].Mechanics & Mechanic.VoidSkip);
             Assert.AreNotEqual(Mechanic.None, r.Solutions[0].Mechanics & Mechanic.SheepWrap);
         }
@@ -51,7 +51,7 @@ namespace Sheepft.Tests
             Assert.AreEqual(1, r.OptimalTurns);   // R0:L로 순환
             Assert.AreEqual(1, r.IntendedTurns);
             Assert.AreEqual(3, r.BypassTurns);    // R0:R 세 번이면 순환 없이도 깨진다
-            Assert.AreEqual("R0:R R0:R R0:R", r.Bypass.MovesText);
+            Assert.AreEqual("R0:R, R0:R, R0:R", r.Bypass.MovesText);
             Assert.AreEqual(Mechanic.SheepWrap, r.BypassMissing);
         }
 
@@ -96,7 +96,7 @@ namespace Sheepft.Tests
                 ".G  .S  .  g\n" +
                 ".   .   .  ."));
             Assert.AreEqual(2, r.OptimalTurns);
-            Assert.AreEqual("R1:R R1:R", r.Solutions[0].MovesText);
+            Assert.AreEqual("R1:R, R1:R", r.Solutions[0].MovesText);
             Assert.AreNotEqual(Mechanic.None, r.Solutions[0].Mechanics & Mechanic.Wait);
             Assert.AreNotEqual(Mechanic.None, r.Solutions[0].Mechanics & Mechanic.GoatPushSheep);
         }
