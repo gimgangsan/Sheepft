@@ -42,6 +42,19 @@ MonoBehaviour:
   goatLungeSeconds: 0.09
   goatReturnSeconds: 0.06
   goatAttackGapSeconds: 0.05
+  starFirstDelaySeconds: 0.15
+  starIntervalSeconds: 0.25
+  starDropSeconds: 0.12
+  starDropScale: 2.5
+  starSettleSeconds: 0.12
+  starSquash: 0.15
+  starShakePixels: 3
+  starShakeSeconds: 0.15
+  arrivalIconScale: 0.5
+  arrivalArrowScale: 0.5
+  arrivalIconHeightPixels: 29
+  arrivalArrowHeightPixels: 16
+  arrivalSpacingPixels: 16
   stackSpacingPixels: 6
   packOffsetPixels: {x: -4, y: 3}
   riderOffsetPixels: {x: -5, y: 13}
@@ -51,8 +64,17 @@ MonoBehaviour:
   menuLogoCanvasSize: {x: 320, y: 96}
   menuTitleCell: {x: 944, y: 200}
   menuSettingsCell: {x: 576, y: 200}
+  menuSettingsRowTopLeft: {x: 96, y: 56}
+  menuSettingsRowSpacing: 56
   menuStageCell: {x: 1400, y: 200}
   menuStageRowsAround: 2
+  menuBubbleTopLeft: {x: 1548, y: 4}
+  menuBubbleCanvasSize: {x: 365, y: 269}
+  menuBubbleNameTop: {x: 182, y: 30}
+  menuBubbleStarsTop: {x: 182, y: 50}
+  menuBubbleConditionTop: {x: 182, y: 70}
+  menuBubbleMapCenter: {x: 182, y: 146}
+  menuBubbleFontSize: 4
   menuLabelFontSize: 4
   menuPanSeconds: 0.6
   menuEnterDelaySeconds: 0.5

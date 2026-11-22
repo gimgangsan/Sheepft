@@ -49,6 +49,8 @@ namespace Sheepft.Game
 
         private readonly List<Arrow> arrows = new List<Arrow>();
         private Transform arrowRoot;
+        /// <summary>마우스를 올린 수로 걷는 동물이 턴 끝에 어디 있을지 보여 준다.</summary>
+        private ArrivalMarkers arrivals;
         private Coroutine playback;
         private float aspect;
 
@@ -72,10 +74,13 @@ namespace Sheepft.Game
 
             boardView = NewChild("board").gameObject.AddComponent<BoardView>();
             arrowRoot = NewChild("arrows");
+            arrivals = NewChild("arrivals").gameObject.AddComponent<ArrivalMarkers>();
+            arrivals.Init(catalog);
 
             if (ui == null) ui = FindFirstObjectByType<GameUI>();
             if (ui != null)
             {
+                ui.Init(Settings);
                 ui.UndoClicked += Undo;
                 ui.RestartClicked += Restart;
                 ui.NextClicked += NextStage;
@@ -245,6 +250,7 @@ namespace Sheepft.Game
             {
                 if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame) ui.CloseLevelSelect();
                 boardView.ShowLine(null);
+                arrivals.Hide();
                 return;
             }
 
@@ -293,6 +299,9 @@ namespace Sheepft.Game
             }
 
             boardView.ShowLine(hovered == null ? null : Board.Line(hovered.Point.Axis, hovered.Point.Index));
+            // 그 수를 두면 늑대·말·소가 턴 끝에 어디 있을지 미리 보인다.
+            if (hovered != null) arrivals.Show(Board, hovered.Point);
+            else arrivals.Hide();
             if (hovered != null && click) Play(hovered.Point);
         }
 
@@ -693,9 +702,13 @@ namespace Sheepft.Game
             return 1;
         }
 
-        /// <summary>화살표를 모두 숨긴다. 다음 프레임에 마우스가 올라가 있는 것만 다시 보인다. X자는 그대로 둔다.</summary>
+        /// <summary>
+        /// 화살표와 도착 칸 표시를 모두 숨긴다. 다음 프레임에 마우스가 올라가 있는 것만 다시 보인다. X자는 그대로 둔다.
+        /// 판이 바뀔 때(수를 둠, undo, 재시작, 스테이지 열기)마다 불리므로 미리보기도 여기서 지운다.
+        /// </summary>
         private void HideArrows()
         {
+            if (arrivals != null) arrivals.Hide();
             foreach (var arrow in arrows)
                 if (arrow.Open && arrow.Renderer != null) arrow.Renderer.enabled = false;
         }

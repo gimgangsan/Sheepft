@@ -270,6 +270,7 @@ namespace Sheepft.Game
             result.gameObject.AddComponent<Image>().color = PanelColor;
             ui.resultPanel = result.gameObject;
             ui.resultText = Text("ResultText", result, bold, 20f, TextAlignmentOptions.Center, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            AddStarRow(ui, icons);
             result.gameObject.SetActive(false);
 
             // 레벨 선택: 화면 전체를 덮는 판. 빈 곳을 누르면 닫힌다.
@@ -303,8 +304,57 @@ namespace Sheepft.Game
             ui.sheepText.text = "0/1";
             ui.titleText.text = "1. Stage Name";
             ui.descriptionText.text = "Stage description.";
-            ui.resultText.text = "CLEAR!\n3 STARS";
+            ui.resultText.text = "CLEAR!";
             return root;
+        }
+
+        /// <summary>
+        /// 결과 판에 클리어 별 줄(별 3개, 16×16 아이콘을 두 배로)을 넣는다.
+        /// 판은 세로로 쌓고 내용에 맞춰 높이를 바꾼다. 별 줄을 끄면(패배) 글자만 남은 높이가 된다.
+        /// 예전 GameUI.prefab에 별 줄을 더할 때도 이 함수를 쓴다.
+        /// </summary>
+        public static void AddStarRow(GameUI ui, SpriteSheet icons)
+        {
+            var result = (RectTransform)ui.resultPanel.transform;
+            var layout = result.GetComponent<VerticalLayoutGroup>();
+            if (layout == null) layout = result.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 6, 10);
+            layout.spacing = 2f;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            var fitter = result.GetComponent<ContentSizeFitter>();
+            if (fitter == null) fitter = result.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            // 글자 한 줄의 높이는 소수(약 28.8)라서, 최소 높이를 정수로 주어 별 줄이 정수 픽셀에 오게 한다.
+            var textElement = ui.resultText.GetComponent<LayoutElement>();
+            if (textElement == null) textElement = ui.resultText.gameObject.AddComponent<LayoutElement>();
+            textElement.minHeight = 30f;
+
+            var old = result.Find("StarRow");
+            if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
+            var middle = new Vector2(0.5f, 0.5f);
+            var row = Rect("StarRow", result, middle, middle, middle, Vector2.zero, new Vector2(0f, 32f));
+            var element = row.gameObject.AddComponent<LayoutElement>();
+            element.minHeight = 32f;
+            element.preferredHeight = 32f;
+            var rowLayout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 8f;
+            rowLayout.childAlignment = TextAnchor.MiddleCenter;
+            rowLayout.childControlWidth = false;
+            rowLayout.childControlHeight = false;
+            rowLayout.childForceExpandWidth = false;
+            rowLayout.childForceExpandHeight = false;
+
+            ui.starSprite = icons == null ? null : icons.TagFrame("star");
+            ui.starEmptySprite = icons == null ? null : icons.TagFrame("star_empty");
+            ui.starImages = new Image[3];
+            for (int i = 0; i < 3; i++)
+                ui.starImages[i] = Icon("Star" + (i + 1), row, middle, Vector2.zero, i < 2 ? ui.starSprite : ui.starEmptySprite);
+            ui.starRow = row.gameObject;
         }
 
         private static RectTransform Rect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 position, Vector2 size)

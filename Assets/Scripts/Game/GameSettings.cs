@@ -32,6 +32,47 @@ namespace Sheepft.Game
         [Tooltip("한 방향 공격이 끝나고 다음 방향을 공격하기 전에 쉬는 시간(초).")]
         [Min(0f)] public float goatAttackGapSeconds = 0.05f;
 
+        [Header("클리어 별 연출")]
+        [Tooltip("CLEAR! 판이 뜬 뒤 첫 별이 떨어지기 시작할 때까지(초).")]
+        [Min(0f)] public float starFirstDelaySeconds = 0.15f;
+
+        [Tooltip("얻은 별이 하나씩 떨어지는 간격(초).")]
+        [Min(0f)] public float starIntervalSeconds = 0.25f;
+
+        [Tooltip("별이 크게 나타나 제 크기로 줄어들며 박히기까지(초). 끝나는 순간 판이 흔들린다.")]
+        [Min(0.01f)] public float starDropSeconds = 0.12f;
+
+        [Tooltip("별이 처음 나타날 때의 크기(제 크기의 배수).")]
+        [Min(1f)] public float starDropScale = 2.5f;
+
+        [Tooltip("박힌 뒤 납작해졌다 돌아오는 시간(초).")]
+        [Min(0f)] public float starSettleSeconds = 0.12f;
+
+        [Tooltip("박힐 때 납작해지는 정도. 0.15면 85%까지 줄었다가 돌아온다.")]
+        [Range(0f, 0.5f)] public float starSquash = 0.15f;
+
+        [Tooltip("별이 박힐 때 결과 판이 흔들리는 폭(기준 해상도의 픽셀). 0이면 흔들지 않는다.")]
+        [Min(0f)] public float starShakePixels = 3f;
+
+        [Tooltip("결과 판이 흔들리는 시간(초).")]
+        [Min(0f)] public float starShakeSeconds = 0.15f;
+
+        [Header("도착 칸 표시 (shift 화살표에 마우스를 올렸을 때)")]
+        [Tooltip("동물 그림의 크기(원래 크기의 배수).")]
+        [Min(0.1f)] public float arrivalIconScale = 0.5f;
+
+        [Tooltip("아래 방향 화살표의 크기(원래 크기의 배수).")]
+        [Min(0.1f)] public float arrivalArrowScale = 0.5f;
+
+        [Tooltip("동물 그림 가운데의 높이(픽셀, 32px = 1칸). 칸 바닥에서 잰다.")]
+        public float arrivalIconHeightPixels = 29f;
+
+        [Tooltip("화살표 가운데의 높이(픽셀). 칸 바닥에서 잰다.")]
+        public float arrivalArrowHeightPixels = 16f;
+
+        [Tooltip("같은 칸에 여럿이 올 때 표시 사이의 가로 간격(픽셀).")]
+        public float arrivalSpacingPixels = 16f;
+
         [Header("배치")]
         [Tooltip("같은 칸에 겹친 오브젝트를 옆으로 어긋나게 놓는 간격(픽셀, 32px = 1칸).")]
         public float stackSpacingPixels = 6f;

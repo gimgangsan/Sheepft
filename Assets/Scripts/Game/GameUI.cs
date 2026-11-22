@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Sheepft.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Sheepft.Game
@@ -30,6 +31,14 @@ namespace Sheepft.Game
         [Header("결과")]
         public GameObject resultPanel;
         public TMP_Text resultText;
+        [Tooltip("클리어했을 때만 켜는 별 줄. 결과 판의 자식이다.")]
+        public GameObject starRow;
+        [Tooltip("별 3개. 왼쪽부터 1, 2, 3번째 별이다.")]
+        public Image[] starImages = new Image[0];
+        [Tooltip("hud_icons의 star 태그.")]
+        public Sprite starSprite;
+        [Tooltip("hud_icons의 star_empty 태그.")]
+        public Sprite starEmptySprite;
 
         [Header("레벨 선택")]
         public GameObject levelSelectPanel;
@@ -63,10 +72,31 @@ namespace Sheepft.Game
         private readonly List<Button> levelButtons = new List<Button>();
         private bool pulse;
 
+        private GameSettings settings;
+        private GameResult shownResult = GameResult.InProgress;
+        // 별 연출: 얻은 별 수, 시작한 뒤 지난 시간, 시작한 프레임. 연출 중이 아니면 starTime < 0.
+        private int earnedStars;
+        private float starTime = -1f;
+        private int starStartFrame;
+        private RectTransform resultRect;
+        private Vector2 resultHome;
+
         public bool IsLevelSelectOpen => levelSelectPanel != null && levelSelectPanel.activeSelf;
+
+        /// <summary>연출 조정값. 비어 있으면 연출 없이 끝 상태를 바로 보인다.</summary>
+        public void Init(GameSettings gameSettings)
+        {
+            settings = gameSettings;
+        }
 
         private void Awake()
         {
+            if (resultPanel != null)
+            {
+                resultRect = resultPanel.transform as RectTransform;
+                if (resultRect != null) resultHome = resultRect.anchoredPosition;
+            }
+            if (starRow != null) starRow.SetActive(false);
             Bind(undoButton, () => { if (UndoClicked != null) UndoClicked(); });
             Bind(restartButton, () => { if (RestartClicked != null) RestartClicked(); });
             Bind(nextButton, () => { if (NextClicked != null) NextClicked(); });
@@ -112,16 +142,128 @@ namespace Sheepft.Game
         public void ShowResult(GameResult result, int stars, bool hasNextStage)
         {
             bool over = result != GameResult.InProgress;
+            bool won = result == GameResult.Won;
+            // 별 이미지가 없는 예전 프리팹은 별 수를 글자로 쓴다.
+            bool starIcons = starRow != null && starImages != null && starImages.Length > 0;
             if (resultPanel != null) resultPanel.SetActive(over);
             if (resultText != null && over)
             {
-                resultText.text = result == GameResult.Won
-                    ? wonText + "\n" + stars + (stars == 1 ? " STAR" : " STARS")
+                resultText.text = won
+                    ? (starIcons ? wonText : wonText + "\n" + stars + (stars == 1 ? " STAR" : " STARS"))
                     : lostText + "\n" + lostHint;
             }
-            if (nextButton != null) nextButton.gameObject.SetActive(result == GameResult.Won && hasNextStage);
+            if (nextButton != null) nextButton.gameObject.SetActive(won && hasNextStage);
             pulse = result == GameResult.Lost;
             if (!pulse) SetScale(1f);
+
+            // 별: 새로 클리어했을 때만 처음부터 연출한다. 같은 결과로 다시 불리면 하던 연출을 이어 간다.
+            if (starRow != null) starRow.SetActive(won && starIcons);
+            if (won && starIcons && (shownResult != GameResult.Won || stars != earnedStars))
+            {
+                earnedStars = stars;
+                starTime = 0f;
+                starStartFrame = Time.frameCount;
+                if (settings == null) starTime = -1f;
+                ApplyStars();
+            }
+            else if (!won)
+            {
+                StopStars();
+            }
+            shownResult = result;
+        }
+
+        // ── 클리어 별 연출 ──
+
+        /// <summary>남은 별 연출을 건너뛰고 끝 상태로.</summary>
+        public void SkipStars()
+        {
+            if (starTime < 0f) return;
+            starTime = -1f;
+            ApplyStars();
+        }
+
+        private void StopStars()
+        {
+            starTime = -1f;
+            if (resultRect != null) resultRect.anchoredPosition = resultHome;
+        }
+
+        private void UpdateStars()
+        {
+            if (starTime < 0f) return;
+            // 연출을 시작한 프레임의 클릭(재생 빨리 감기)으로는 건너뛰지 않는다.
+            var pointer = Pointer.current;
+            if (Time.frameCount != starStartFrame && pointer != null && pointer.press.wasPressedThisFrame)
+            {
+                SkipStars();
+                return;
+            }
+            starTime += Time.unscaledDeltaTime;
+            ApplyStars();
+        }
+
+        /// <summary>
+        /// starTime의 모습을 그린다. starTime &lt; 0이면 끝 상태(얻은 별은 채운 별, 나머지는 빈 별, 흔들림 없음).
+        /// 얻은 별 i는 첫 지연 + i × 간격에 starDropScale 배로 나타나 줄어들며 박히고, 박히는 순간 판이 흔들린다.
+        /// </summary>
+        private void ApplyStars()
+        {
+            var s = settings;
+            bool done = starTime < 0f || s == null;
+            float shake = 0f;
+            float lastEnd = 0f;
+            for (int i = 0; i < starImages.Length; i++)
+            {
+                var image = starImages[i];
+                if (image == null) continue;
+                float scale = 1f, alpha = 1f;
+                bool filled = i < earnedStars;
+                if (!done && filled)
+                {
+                    float start = s.starFirstDelaySeconds + i * s.starIntervalSeconds;
+                    float impact = start + s.starDropSeconds;
+                    float t = starTime - start;
+                    lastEnd = Mathf.Max(lastEnd, impact + Mathf.Max(s.starSettleSeconds, s.starShakeSeconds));
+                    if (t < 0f)
+                    {
+                        // 아직 차례가 아니다: 빈 별로 둔다.
+                        filled = false;
+                    }
+                    else if (t < s.starDropSeconds)
+                    {
+                        // 크게 나타나 점점 빠르게 줄어든다.
+                        float k = t / s.starDropSeconds;
+                        scale = Mathf.Lerp(s.starDropScale, 1f, k * k);
+                        alpha = Mathf.Clamp01(k * 3f);
+                    }
+                    else
+                    {
+                        float after = starTime - impact;
+                        if (after < s.starSettleSeconds)
+                            scale = 1f - s.starSquash * Mathf.Sin(after / s.starSettleSeconds * Mathf.PI);
+                        if (after < s.starShakeSeconds)
+                            shake = Mathf.Max(shake, s.starShakePixels * (1f - after / s.starShakeSeconds));
+                    }
+                }
+
+                image.sprite = filled ? starSprite : starEmptySprite;
+                image.rectTransform.localScale = new Vector3(scale, scale, 1f);
+                var color = image.color;
+                color.a = alpha;
+                image.color = color;
+            }
+
+            if (!done && starTime > lastEnd) { starTime = -1f; done = true; }
+
+            if (resultRect != null)
+            {
+                // 도트가 흐려지지 않게 흔들림은 정수 픽셀로.
+                Vector2 offset = shake > 0f
+                    ? new Vector2(Mathf.Round(UnityEngine.Random.Range(-shake, shake)), Mathf.Round(UnityEngine.Random.Range(-shake, shake)))
+                    : Vector2.zero;
+                resultRect.anchoredPosition = resultHome + offset;
+            }
         }
 
         // ── 레벨 선택 ──
@@ -164,6 +306,7 @@ namespace Sheepft.Game
 
         private void Update()
         {
+            UpdateStars();
             if (pulse) SetScale(1f + 0.12f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)));
         }
 
