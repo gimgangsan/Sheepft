@@ -20,7 +20,8 @@ namespace Sheepft.Tools
     /// <summary>
     /// shift 포인트 정하기. 헤더의 shift는 무시하고, 실제 칸이 둘 이상인 모든 줄을 양방향으로 연 상태에서 시작해
     /// 의도와 다른 해를 만드는 포인트만 뺀다. 예전 Solver~의 `prune` 명령과 같다.
-    /// "의도와 다른 해"는 @intent의 기믹 없이 제한 턴 안에 깨는 해, 그리고 @optimal의 기믹 없이 최적 길이로 깨는 해다.
+    /// "의도와 다른 해"는 @intent의 기믹 없이 최적 길이 이하로 깨는 해, 그리고 @optimal의 기믹 없이 최적 길이로 깨는 해다.
+    /// 최적보다 느린 우회해는 괜찮다(StageChecker.BypassTooFast).
     ///
     /// 그런 해가 하나 나오면, 그 해가 쓰는 shift 포인트 중 적어도 하나는 빼야 한다.
     /// 그래서 그 해의 포인트를 하나씩 빼 보는 식으로 가지를 치고, 가장 적게 빼는 조합을 모두 찾는다.
@@ -140,7 +141,7 @@ namespace Sheepft.Tools
             var r = Solver.Solve(variant, new SolveOptions { MaxSolutions = 1, MaxNodes = maxNodes, Cancel = cancel });
             verdict.Report = r;
             if (r.Truncated) { verdict.Why = "탐색 한도에 걸림"; return verdict; }
-            if (r.BypassTurns >= 0)
+            if (StageChecker.BypassTooFast(r))
             {
                 verdict.Why = "최적 " + r.OptimalTurns + "턴. " + MechanicText.Describe(r.BypassMissing) + " 없이 " + r.BypassTurns + "턴에 깨짐: " + r.Bypass.MovesText;
                 verdict.Witness = r.Bypass.Moves;

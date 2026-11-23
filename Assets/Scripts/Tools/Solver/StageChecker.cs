@@ -24,7 +24,7 @@ namespace Sheepft.Tools
 
     /// <summary>
     /// 스테이지 검증 규칙. 예전 Solver~의 `check` 명령과 같은 기준이다.
-    /// 최적해가 의도 기믹을 쓰는지, 의도 기믹을 피해 가는 해(우회해)가 없는지, 별 기준이 맞는지,
+    /// 최적해가 의도 기믹을 쓰는지, 의도 기믹을 피해 가는 해(우회해)가 최적해만큼 빠르지 않은지, 별 기준이 맞는지,
     /// 풀이 줄이 게임 규칙으로 실제로 승리하는지 본다.
     /// </summary>
     public static class StageChecker
@@ -48,7 +48,7 @@ namespace Sheepft.Tools
             {
                 if (r.IntendedTurns < 0) problems.Add("의도해 없음");
                 else if (r.IntendedTurns != r.OptimalTurns) problems.Add("최적해가 의도 기믹을 안 씀");
-                if (r.BypassTurns >= 0) problems.Add("우회해 " + r.BypassTurns + "턴 (" + MechanicText.Describe(r.BypassMissing) + " 없이)");
+                if (BypassTooFast(r)) problems.Add("우회해 " + r.BypassTurns + "턴 (" + MechanicText.Describe(r.BypassMissing) + " 없이)");
             }
             if (r.OptimalMissing != Mechanic.None) problems.Add("최적해가 " + MechanicText.Describe(r.OptimalMissing) + "을 안 써도 됨");
             if (rules.Star3Turns <= 0) problems.Add("@stars 없음");
@@ -67,6 +67,15 @@ namespace Sheepft.Tools
 
             check.Milliseconds = watch.ElapsedMilliseconds;
             return check;
+        }
+
+        /// <summary>
+        /// 우회해가 문제인지. 최적해보다 느린 우회해는 괜찮다(별 3개는 의도 기믹을 써야만 받는다).
+        /// 최적해와 길이가 같거나 더 빠르면 문제다.
+        /// </summary>
+        public static bool BypassTooFast(SolveReport r)
+        {
+            return r.BypassTurns >= 0 && r.BypassTurns <= r.OptimalTurns;
         }
 
         /// <summary>`# 풀이:` 줄의 수순을 게임 규칙(제한 턴 포함) 그대로 두어 승리하는지 본다. 문제가 없으면 null.</summary>
@@ -142,7 +151,8 @@ namespace Sheepft.Tools
                 if (r.BypassTurns < 0) sb.AppendLine("  의도 기믹 없이 깨는 해: 없음 (" + r.Depth + "턴까지 탐색)");
                 else
                 {
-                    sb.AppendLine("  의도 기믹 없이 깨는 최단 해: " + r.BypassTurns + "턴  " + r.Bypass.MovesText);
+                    sb.AppendLine("  의도 기믹 없이 깨는 최단 해: " + r.BypassTurns + "턴  " + r.Bypass.MovesText +
+                                  (BypassTooFast(r) ? "" : "  (최적보다 느려서 괜찮음)"));
                     sb.AppendLine("     쓰지 않은 기믹: " + MechanicText.Describe(r.BypassMissing));
                 }
             }

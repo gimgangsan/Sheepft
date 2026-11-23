@@ -176,17 +176,46 @@ namespace Sheepft.Tests
         }
 
         [Test]
-        public void PrunerRemovesPointThatBypassesIntent()
+        public void CheckerAllowsBypassSlowerThanOptimal()
         {
-            // 의도는 순환. R0:R로 세 번 밀면 순환 없이 깨지고, 열을 밀면 양이 풀과 다른 줄로 간다.
+            // 의도는 순환. 최적은 R0:L 1턴(순환), 순환 없이 R0:R 세 번은 3턴이라 최적보다 느리다.
             var level = LevelParser.Parse(
-                "# t  shift: R0:L  제한 3턴  목표 양 1\n" +
+                "# t  shift: R0:RL  제한 5턴  목표 양 1\n" +
                 "@intent SheepWrap\n" +
                 "@stars 1 2\n" +
                 ".S  .  .  g");
+            var check = StageChecker.Check(level, 1);
+            Assert.AreEqual(3, check.Report.BypassTurns);
+            Assert.IsTrue(check.Ok, string.Join("; ", check.Problems));
+        }
+
+        [Test]
+        public void CheckerRejectsBypassAsFastAsOptimal()
+        {
+            // 의도는 순환. R0:R 두 번(순환)과 R0:L 두 번(순환 없음)이 둘 다 2턴이다.
+            var level = LevelParser.Parse(
+                "# t  shift: R0:RL  제한 3턴  목표 양 1\n" +
+                "@intent SheepWrap\n" +
+                "@stars 2 3\n" +
+                "g  .  .S  .");
+            var check = StageChecker.Check(level, 1);
+            Assert.AreEqual(2, check.Report.BypassTurns);
+            Assert.IsTrue(check.Problems.Any(p => p.StartsWith("우회해")), string.Join("; ", check.Problems));
+        }
+
+        [Test]
+        public void PrunerRemovesPointThatBypassesIntent()
+        {
+            // 의도는 순환. R0:L 두 번이면 순환 없이 최적과 같은 2턴에 깨지므로 R0:L을 빼야 한다.
+            var level = LevelParser.Parse(
+                "# t  shift: R0:R  제한 3턴  목표 양 1\n" +
+                "@intent SheepWrap\n" +
+                "@stars 2 3\n" +
+                "g  .  .S  .");
             var result = Pruner.Run(level);
             Assert.IsTrue(result.Found, result.Text);
             StringAssert.DoesNotContain("R0:RL", result.Spec);
+            StringAssert.DoesNotContain("R0:L", result.Spec);
         }
     }
 }
