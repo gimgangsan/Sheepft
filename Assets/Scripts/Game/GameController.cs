@@ -52,6 +52,10 @@ namespace Sheepft.Game
         /// <summary>마우스를 올린 수로 걷는 동물이 턴 끝에 어디 있을지 보여 준다.</summary>
         private ArrivalMarkers arrivals;
         private Coroutine playback;
+        /// <summary>둔 수의 재생이 끝나면 승패 소리를 낸다. 재생을 끝까지 보거나 빨리 감았을 때 한 번만.</summary>
+        private bool resultSoundPending;
+        /// <summary>수를 두기 전에 이미 승리 불가였는가. 처음 승리 불가가 될 때만 패배 소리를 낸다.</summary>
+        private bool cannotWinBeforeMove;
         private float aspect;
 
         private MenuController menu;
@@ -76,6 +80,7 @@ namespace Sheepft.Game
             arrowRoot = NewChild("arrows");
             arrivals = NewChild("arrivals").gameObject.AddComponent<ArrivalMarkers>();
             arrivals.Init(catalog);
+            SoundManager.Init(Settings.sounds);
 
             if (ui == null) ui = FindFirstObjectByType<GameUI>();
             if (ui != null)
@@ -139,6 +144,7 @@ namespace Sheepft.Game
             FitCamera();
             if (ui != null) ui.ShowStage(index + 1, Board.Rules.Name, Board.Rules.Description);
             RefreshUi();
+            SoundManager.PlayGameMusic();
         }
 
         // ── 배치 ──
@@ -311,7 +317,13 @@ namespace Sheepft.Game
         {
             // 풀 위의 양 수는 재생이 끝난 뒤에 바꾼다. 남은 턴만 바로 줄인다.
             int sheepBefore = Board.SheepOnGrass();
+            bool cannotWinBefore = Board.CannotWin;
             if (!session.Play(move)) return;
+            SoundManager.Play(Sound.Shift);
+            // 장애물에 막혀 제자리에 남은 오브젝트가 있다. 이 표시는 플레이어의 shift에서만 켜진다.
+            if ((Board.Mechanics & Mechanic.Blocked) != 0) SoundManager.Play(Sound.Impact);
+            cannotWinBeforeMove = cannotWinBefore;
+            resultSoundPending = true;
             if (Board.Result == GameResult.Won) SaveData.RecordClear(stageIndex, Stars(), stageCount);
             boardView.ShowLine(null);
             HideArrows();
@@ -323,6 +335,7 @@ namespace Sheepft.Game
         {
             StopPlayback();
             if (!session.Undo()) return;
+            SoundManager.Play(Sound.Click);
             boardView.SyncAll(Board);
             RefreshUi();
         }
@@ -331,13 +344,16 @@ namespace Sheepft.Game
         {
             StopPlayback();
             session.Restart();
+            SoundManager.Play(Sound.Click);
             boardView.SyncAll(Board);
             RefreshUi();
         }
 
         private void NextStage()
         {
-            if (stageIndex < stageCount - 1) LoadStage(stageIndex + 1);
+            if (stageIndex >= stageCount - 1) return;
+            SoundManager.Play(Sound.Click);
+            LoadStage(stageIndex + 1);
         }
 
         // ── 메뉴 ──
@@ -345,6 +361,9 @@ namespace Sheepft.Game
         /// <summary>게임 중 Esc나 레벨 선택 버튼: 메뉴의 스테이지 선택 화면, 양은 하던 스테이지 줄.</summary>
         private void OpenMenuFromGame()
         {
+            SoundManager.Play(Sound.Click);
+            // 재생 중에 나가면 그 수의 승패 소리는 내지 않는다.
+            resultSoundPending = false;
             if (playback != null) FinishPlayback();
             OpenMenu(MenuScreen.StageSelect, stageIndex);
         }
@@ -360,6 +379,7 @@ namespace Sheepft.Game
                 ui.SetVisible(false);
             }
             menu.Open(screen, stage);
+            SoundManager.PlayTitleMusic();
         }
 
         private void CloseMenu()
@@ -391,6 +411,7 @@ namespace Sheepft.Game
             playback = null;
             boardView.SyncAll(Board);
             RefreshUi();
+            PlayResultSound();
         }
 
         private IEnumerator PlayStep(List<GameEvent> step, ShiftPoint move)
@@ -417,7 +438,11 @@ namespace Sheepft.Game
                 var pushed = e as MovedEvent;
                 if (pushed != null && pushed.Cause == MoveCause.CowPush)
                 {
-                    if (!cowPush) boardView.SpawnEffect("cow_impact", pushed.From, DirAngle(DirBetween(pushed.From, pushed.To)));
+                    if (!cowPush)
+                    {
+                        boardView.SpawnEffect("cow_impact", pushed.From, DirAngle(DirBetween(pushed.From, pushed.To)));
+                        SoundManager.Play(Sound.Impact);
+                    }
                     cowPush = true;
                 }
             }
@@ -429,7 +454,11 @@ namespace Sheepft.Game
                 {
                     if (m.To.Col != m.From.Col || m.Cause == MoveCause.Shift && move.Axis == Axis.Row)
                         boardView.View(m.Id).SetFlip(FacesLeft(m, move));
-                    if (m.Cause == MoveCause.Walk) boardView.View(m.Id).PlayAction(walkTag, false);
+                    if (m.Cause == MoveCause.Walk)
+                    {
+                        boardView.View(m.Id).PlayAction(walkTag, false);
+                        SoundManager.Play(Sound.Step);
+                    }
                 }
                 // 말이 돌아섰으면 등에 탄 것도 반대쪽 등으로 옮긴다. 아직 모두 출발 칸에 있으므로 다시 배치해도 된다.
                 boardView.Layout();
@@ -457,7 +486,12 @@ namespace Sheepft.Game
                         // 양동이는 물이 차고 비는 것만 본다(같은 단계에 젖음도 함께 바뀌므로 두 번 나오지 않게).
                         bool water = status.Status == StatusKind.Filled
                             || status.Status == StatusKind.Wet && !HasFilledChange(step, status.Id);
-                        if (water) boardView.SpawnEffect(status.On ? "splash" : "steam", view.Pos);
+                        if (water)
+                        {
+                            boardView.SpawnEffect(status.On ? "splash" : "steam", view.Pos);
+                            SoundManager.Play(status.On ? Sound.Splash : Sound.Sizzle);
+                        }
+                        if (status.Status == StatusKind.Burned && status.On) SoundManager.Play(Sound.Fire);
                         view.ApplyStatus(status.Status, status.On);
                     }
                     other = true;
@@ -466,7 +500,13 @@ namespace Sheepft.Game
                 if (target != null)
                 {
                     var view = boardView.View(target.Id);
-                    if (view != null) view.SetTarget(target.TargetId >= 0);
+                    if (view != null)
+                    {
+                        view.SetTarget(target.TargetId >= 0);
+                        // 바구니를 찾은 순간 운다: 말은 발견, 소는 냄새.
+                        if (target.TargetId >= 0 && view.Sheet == "horse") SoundManager.Play(Sound.HorseNeigh);
+                        if (target.TargetId >= 0 && view.Sheet == "cow") SoundManager.Play(Sound.CowMoo);
+                    }
                     other = true;
                 }
                 var rider = e as RiderChangedEvent;
@@ -487,14 +527,22 @@ namespace Sheepft.Game
                 if (terrain != null)
                 {
                     boardView.SetTerrain(terrain.Pos, terrain.To);
-                    if (terrain.To == TerrainType.Fire) boardView.SpawnEffect("ignite", terrain.Pos);
+                    if (terrain.To == TerrainType.Fire)
+                    {
+                        boardView.SpawnEffect("ignite", terrain.Pos);
+                        SoundManager.Play(Sound.Fire);
+                    }
                     other = true;
                 }
                 var removed = e as RemovedEvent;
                 if (removed != null)
                 {
                     var view = boardView.View(removed.Id);
-                    if (view != null) boardView.SpawnEffect(RemoveEffect(view, removed.Cause), view.Pos);
+                    if (view != null)
+                    {
+                        boardView.SpawnEffect(RemoveEffect(view, removed.Cause), view.Pos);
+                        PlayRemoveSound(view, removed.Cause);
+                    }
                     boardView.RemoveView(removed.Id);
                     other = true;
                 }
@@ -515,7 +563,10 @@ namespace Sheepft.Game
             view.StopAction(walkTag);
             // 양이 풀에 도착했다.
             if (view.Sheet == "sheep" && !view.Wet && !view.Burned && boardView.ShowsGrass(m.To))
+            {
                 boardView.SpawnEffect("sheep_arrive", m.To);
+                SoundManager.Play(Sound.SheepArrive);
+            }
         }
 
         /// <summary>
@@ -556,6 +607,7 @@ namespace Sheepft.Game
                         {
                             impact = true;
                             boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                            SoundManager.Play(Sound.Impact);
                         }
                         float k = Mathf.Clamp01(s.moveCurve.Evaluate((t - hit) / moveSeconds));
                         foreach (var m in pushed) PlaceMoving(m, move, k);
@@ -564,7 +616,11 @@ namespace Sheepft.Game
                 }
 
                 // 프레임이 길어 부딪히는 순간을 건너뛰었어도 이펙트는 나온다.
-                if (!impact) boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                if (!impact)
+                {
+                    boardView.SpawnEffect("goat_shockwave", goat.Pos.Step(dir), DirAngle(dir));
+                    SoundManager.Play(Sound.Impact);
+                }
                 goat.Place(home);
                 foreach (var m in pushed) EndMove(m, "walk");
                 boardView.Layout();
@@ -591,6 +647,44 @@ namespace Sheepft.Game
                 case RemoveCause.Merged: return "wolf_merge_dust";
                 default: return "smoke";
             }
+        }
+
+        private static void PlayRemoveSound(EntityView view, RemoveCause cause)
+        {
+            switch (cause)
+            {
+                case RemoveCause.Eaten:
+                    if (view.Sheet == "sheep")
+                    {
+                        // 늑대의 덥석과 양의 "메"를 같이 낸다. 양 소리는 SoundLibrary에서 조금 늦춰 둔다.
+                        SoundManager.Play(Sound.WolfEat);
+                        SoundManager.Play(Sound.SheepEaten);
+                    }
+                    else
+                    {
+                        SoundManager.Play(Sound.Eat);
+                    }
+                    break;
+                case RemoveCause.Merged:
+                    SoundManager.Play(Sound.Impact);
+                    break;
+                default:
+                    SoundManager.Play(Sound.Fire);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 둔 수의 재생이 끝났을 때(끝까지 보거나 빨리 감음) 승패 소리를 한 번 낸다.
+        /// undo·재시작·스테이지 열기에서는 부르지 않는다.
+        /// </summary>
+        private void PlayResultSound()
+        {
+            if (!resultSoundPending) return;
+            resultSoundPending = false;
+            if (Board.Result == GameResult.Won) SoundManager.Play(Sound.Win);
+            else if (Board.Result == GameResult.Lost) SoundManager.Play(Sound.Lose);
+            else if (Board.CannotWin && !cannotWinBeforeMove) SoundManager.Play(Sound.Lose);
         }
 
         private static Dir DirBetween(Pos from, Pos to)
@@ -671,6 +765,7 @@ namespace Sheepft.Game
             StopPlayback();
             boardView.SyncAll(Board);
             RefreshUi();
+            PlayResultSound();
         }
 
         private void StopPlayback()

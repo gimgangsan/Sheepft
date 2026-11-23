@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c553e7a116573c44e97f5b0306ce9d37, type: 3}
   m_Name: GameSettings
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.GameSettings
+  sounds: {fileID: 11400000, guid: 82036875ee34a3e4ab301abf0b815a66, type: 2}
   moveSeconds: 0.36
   stepPauseSeconds: 0.28
   moveCurve:

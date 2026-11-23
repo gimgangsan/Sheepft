@@ -182,7 +182,9 @@ namespace Sheepft.Game
             PlaceSheet("title_logo", Settings.menuLogoTopLeft, Settings.menuLogoCanvasSize, -40);
 
             // 꿈 풍선. 안의 내용은 고른 스테이지가 바뀔 때마다 UpdateBubble이 다시 채운다.
-            PlaceSheet("dream_bubble", Settings.menuBubbleTopLeft, Settings.menuBubbleCanvasSize, -30);
+            // 풍선 판만 반투명하게 한다. 안의 글자·별·맵은 그대로 또렷하게 둔다.
+            var bubble = PlaceSheet("dream_bubble", Settings.menuBubbleTopLeft, Settings.menuBubbleCanvasSize, -30);
+            if (bubble != null) bubble.color = new Color(1f, 1f, 1f, Settings.menuBubbleAlpha);
             bubbleContent = NewChild(layoutRoot, "bubble content");
 
             // 땅 칸: 타이틀의 양 칸, 설정의 돌아가는 칸.
@@ -332,6 +334,7 @@ namespace Sheepft.Game
         private IEnumerator GoAcross(MenuScreen to)
         {
             busy = true;
+            SoundManager.Play(Sound.Shift);
             var from = screen;
             float seconds = Settings.menuPanSeconds;
             Vector3 start = CellBase(SheepCell(from)), end = CellBase(SheepCell(to));
@@ -377,6 +380,7 @@ namespace Sheepft.Game
             if (selected >= unlocked)
             {
                 // 막힘: 돌 쪽으로 살짝 나갔다가 돌아온다.
+                SoundManager.Play(Sound.Impact);
                 for (float t = 0f; t < seconds; t += Time.deltaTime)
                 {
                     float k = Mathf.Sin(Mathf.Clamp01(t / seconds) * Mathf.PI) * 0.2f;
@@ -388,6 +392,7 @@ namespace Sheepft.Game
                 yield break;
             }
 
+            SoundManager.Play(Sound.Shift);
             Vector3 end = start + Vector3.right;
             for (float t = 0f; t < seconds; t += Time.deltaTime)
             {
@@ -415,6 +420,7 @@ namespace Sheepft.Game
         private IEnumerator Scroll(int step)
         {
             busy = true;
+            SoundManager.Play(Sound.Shift);
             float seconds = Settings.moveSeconds * SaveData.SpeedScale;
             for (float t = 0f; t < seconds; t += Time.deltaTime)
             {
@@ -488,6 +494,7 @@ namespace Sheepft.Game
             {
                 if (!row.Wrap)
                 {
+                    SoundManager.Play(Sound.Impact);
                     for (float t = 0f; t < seconds; t += Time.deltaTime)
                     {
                         t0.position = start + dir * (Mathf.Sin(Mathf.Clamp01(t / seconds) * Mathf.PI) * 0.2f);
@@ -500,6 +507,7 @@ namespace Sheepft.Game
 
                 // 순환: 진행 방향으로 한 칸 나가며 사라지고, 반대쪽 끝의 한 칸 바깥에서 나타나며 들어온다.
                 to = Mod(to, row.Count);
+                SaveSetting(row, to);
                 Vector3 end = CellBase(row.Cell(to));
                 for (float t = 0f; t < seconds; t += Time.deltaTime)
                 {
@@ -520,6 +528,7 @@ namespace Sheepft.Game
             }
             else
             {
+                SaveSetting(row, to);
                 Vector3 end = CellBase(row.Cell(to));
                 for (float t = 0f; t < seconds; t += Time.deltaTime)
                 {
@@ -530,9 +539,19 @@ namespace Sheepft.Game
 
             row.Value = to;
             t0.position = CellBase(row.Cell(to));
-            row.Save(to);
             UpdateSettingLabel(row);
             busy = false;
+        }
+
+        /// <summary>
+        /// 밀기 전에 새 값을 저장하고 shift 소리를 낸다. 그래서 Sound를 바꾸면 바뀐 크기로 들리고, Music은 바로 커지거나 작아진다.
+        /// 도중에 메뉴가 닫혀도 다시 열 때 저장된 값으로 줄을 그리므로 어긋나지 않는다.
+        /// </summary>
+        private static void SaveSetting(SettingRow row, int value)
+        {
+            row.Save(value);
+            SoundManager.RefreshVolume();
+            SoundManager.Play(Sound.Shift);
         }
 
         // ── 스테이지 줄 ──
@@ -850,14 +869,15 @@ namespace Sheepft.Game
         /// 스프라이트 한 장을 그 캔버스의 왼쪽 위가 topLeft에 오게 놓는다. 피벗은 캔버스의 아래쪽 가운데다.
         /// Importer가 투명한 가장자리를 잘라 내므로 캔버스 크기는 따로 받는다.
         /// </summary>
-        private void PlaceSheet(string sheetName, Vector2 topLeft, Vector2 canvasSize, int order)
+        private SpriteRenderer PlaceSheet(string sheetName, Vector2 topLeft, Vector2 canvasSize, int order)
         {
             var sheet = catalog.Get(sheetName);
             var sprite = sheet == null ? null : sheet.Frame(0);
-            if (sprite == null) return;
+            if (sprite == null) return null;
             var renderer = BoardView.NewRenderer(layoutRoot, sheetName, order);
             renderer.sprite = sprite;
             renderer.transform.position = Px(topLeft.x + canvasSize.x * 0.5f, topLeft.y + canvasSize.y);
+            return renderer;
         }
 
         // ── 도우미: 좌표 ──

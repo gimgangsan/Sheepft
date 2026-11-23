@@ -9,6 +9,10 @@ namespace Sheepft.Game
     [CreateAssetMenu(fileName = "GameSettings", menuName = "Sheepft/Game Settings")]
     public sealed class GameSettings : ScriptableObject
     {
+        [Header("소리")]
+        [Tooltip("음악과 효과음 목록(Assets/Data/SoundLibrary.asset). 비어 있으면 소리를 내지 않는다.")]
+        public SoundLibrary sounds;
+
         [Header("이벤트 재생")]
         [Tooltip("오브젝트가 한 칸 움직이는 데 걸리는 시간(초).")]
         [Min(0.01f)] public float moveSeconds = 0.18f;
@@ -121,6 +125,9 @@ namespace Sheepft.Game
 
         [Tooltip("dream_bubble.aseprite의 캔버스 크기.")]
         public Vector2 menuBubbleCanvasSize = new Vector2(365f, 269f);
+
+        [Tooltip("꿈 풍선 판의 불투명도. 1이면 불투명, 0이면 보이지 않는다. 안의 글자·별·맵에는 적용하지 않는다.")]
+        [Range(0f, 1f)] public float menuBubbleAlpha = 1f;
 
         [Tooltip("스테이지 이름 줄의 가운데 위.")]
         public Vector2 menuBubbleNameTop = new Vector2(182f, 30f);

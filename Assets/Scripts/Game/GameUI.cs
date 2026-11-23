@@ -78,6 +78,8 @@ namespace Sheepft.Game
         private int earnedStars;
         private float starTime = -1f;
         private int starStartFrame;
+        /// <summary>박히는 소리를 이미 낸 별 수. 별은 왼쪽부터 차례로 박힌다.</summary>
+        private int landedStars;
         private RectTransform resultRect;
         private Vector2 resultHome;
 
@@ -161,6 +163,7 @@ namespace Sheepft.Game
             if (won && starIcons && (shownResult != GameResult.Won || stars != earnedStars))
             {
                 earnedStars = stars;
+                landedStars = 0;
                 starTime = 0f;
                 starStartFrame = Time.frameCount;
                 if (settings == null) starTime = -1f;
@@ -180,6 +183,8 @@ namespace Sheepft.Game
         {
             if (starTime < 0f) return;
             starTime = -1f;
+            // 건너뛰면 남은 별의 소리는 내지 않는다.
+            landedStars = earnedStars;
             ApplyStars();
         }
 
@@ -240,6 +245,12 @@ namespace Sheepft.Game
                     else
                     {
                         float after = starTime - impact;
+                        // 박힌 순간: 별마다 한 번, 뒤의 별일수록 높은 피치로.
+                        if (i >= landedStars)
+                        {
+                            landedStars = i + 1;
+                            SoundManager.PlayStar(i);
+                        }
                         if (after < s.starSettleSeconds)
                             scale = 1f - s.starSquash * Mathf.Sin(after / s.starSettleSeconds * Mathf.PI);
                         if (after < s.starShakeSeconds)

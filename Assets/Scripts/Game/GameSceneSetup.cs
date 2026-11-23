@@ -14,7 +14,7 @@ namespace Sheepft.Game
     /// Assets/Sprites의 .aseprite를 읽어 Import 설정을 맞추고, GameRoot 프리팹의 스프라이트 목록을 채운다.
     /// 스프라이트를 추가하거나 태그를 바꾸면 다시 돌린다.
     /// 손으로 고친 것은 덮어쓰지 않는다: 프리팹은 스프라이트 목록과 레벨 파일 참조만 갱신하고,
-    /// Game 씬과 GameSettings 에셋은 없을 때만 만든다.
+    /// Game 씬과 GameSettings·SoundLibrary 에셋은 없을 때만 만든다.
     /// 빌드에는 들어가지 않는다.
     /// </summary>
     public static class GameSceneSetup
@@ -27,6 +27,7 @@ namespace Sheepft.Game
         private const string TemplateScenePath = "Assets/Scenes/SampleScene.unity";
         private const string DataFolder = "Assets/Data";
         private const string SettingsPath = "Assets/Data/GameSettings.asset";
+        private const string SoundLibraryPath = "Assets/Data/SoundLibrary.asset";
         private const float PixelsPerUnit = 32f;
 
         [MenuItem("Sheepft/Setup Game Scene")]
@@ -109,6 +110,7 @@ namespace Sheepft.Game
         {
             if (!AssetDatabase.IsValidFolder(PrefabFolder)) AssetDatabase.CreateFolder("Assets", "Prefabs");
             var settings = FindOrCreateSettings();
+            EnsureSoundLibrary(settings);
 
             // 프리팹이 이미 있으면 그 내용을 열어 필요한 값만 갱신한다. 손으로 붙인 컴포넌트와 값은 그대로 남는다.
             bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
@@ -146,6 +148,26 @@ namespace Sheepft.Game
             settings = ScriptableObject.CreateInstance<GameSettings>();
             AssetDatabase.CreateAsset(settings, SettingsPath);
             return settings;
+        }
+
+        /// <summary>
+        /// 소리 목록 에셋. 없을 때만 빈 칸으로 만들고, GameSettings의 sounds가 비어 있으면 이어 준다.
+        /// 소리 파일은 사람이 Inspector에서 넣는다.
+        /// </summary>
+        private static void EnsureSoundLibrary(GameSettings settings)
+        {
+            var library = AssetDatabase.LoadAssetAtPath<SoundLibrary>(SoundLibraryPath);
+            if (library == null)
+            {
+                if (!AssetDatabase.IsValidFolder(DataFolder)) AssetDatabase.CreateFolder("Assets", "Data");
+                library = ScriptableObject.CreateInstance<SoundLibrary>();
+                AssetDatabase.CreateAsset(library, SoundLibraryPath);
+            }
+            if (settings.sounds == null)
+            {
+                settings.sounds = library;
+                EditorUtility.SetDirty(settings);
+            }
         }
 
         private static SpriteSheet ReadSheet(string path)

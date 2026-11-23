@@ -32,7 +32,8 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 | `Assets/Levels/` | 레벨 데이터 `stages.txt` (README 10절 표기법), 스테이지 설계 문서 `StageDesign.md` |
 | `Assets/Settings/` | URP 등 렌더링 설정. 요청이 없으면 건드리지 않는다 |
 | `Assets/Fonts/` | 폰트. 인게임 글자와 숫자는 모두 Agrave Pro(`AgravePro-Regular.ttf`, `AgravePro-Bold.ttf`, SIL OFL)를 쓴다. 라이선스 `AgravePro-OFL.txt`를 함께 둔다 |
-| `Assets/Data/` | 조정값 ScriptableObject (이동 시간, 간격 등) |
+| `Assets/Audio/` | 음악과 효과음 파일. 하위 폴더 없이 모두 여기에 둔다. 어느 소리를 어디에 쓸지는 `Assets/Data/SoundLibrary.asset`에서 정한다 |
+| `Assets/Data/` | 조정값 ScriptableObject (이동 시간, 간격 등), 소리 목록 `SoundLibrary.asset` |
 | `Assets/TextMesh Pro/` | TMP 필수 리소스. Unity가 만든다. 직접 고치지 않는다 |
 
 - 게임에 들어가지 않는 파일(미리보기 이미지, 임시 스크립트, 테스트 출력)은 `Assets/` 안에 두지 않는다. `Assets/` 안의 파일은 Unity가 모두 불러온다.
