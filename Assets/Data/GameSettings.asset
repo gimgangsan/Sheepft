@@ -63,14 +63,15 @@ MonoBehaviour:
   cameraMargin: 0.25
   menuLogoTopLeft: {x: 800, y: 40}
   menuLogoCanvasSize: {x: 320, y: 96}
-  menuTitleCell: {x: 944, y: 200}
-  menuSettingsCell: {x: 576, y: 200}
+  menuTitleCell: {x: 944, y: 168}
+  menuSettingsCell: {x: 576, y: 168}
   menuSettingsRowTopLeft: {x: 96, y: 56}
   menuSettingsRowSpacing: 56
-  menuStageCell: {x: 1400, y: 200}
+  menuStageCell: {x: 1370, y: 168}
   menuStageRowsAround: 2
-  menuBubbleTopLeft: {x: 1548, y: 4}
+  menuBubbleTopLeft: {x: 1548, y: 14}
   menuBubbleCanvasSize: {x: 365, y: 269}
+  menuBubbleAlpha: 1
   menuBubbleNameTop: {x: 182, y: 30}
   menuBubbleStarsTop: {x: 182, y: 50}
   menuBubbleConditionTop: {x: 182, y: 70}
