@@ -187,7 +187,7 @@ namespace Sheepft.Tests
                 "# t  shift: R0:R  제한 7턴\n" +
                 "# 풀이: R0:R\n" +
                 "@desc 줄을 밀면 양이 움직입니다.\n" +
-                "@intent ShiftMove\n" +
+                "@intent SheepWrap\n" +
                 "@optimal Wait\n" +
                 "@stars 3 4\n" +
                 ".S g").Rules;

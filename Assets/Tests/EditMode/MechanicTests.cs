@@ -38,15 +38,15 @@ namespace Sheepft.Tests
         [Test]
         public void Shift_MovesSheep()
         {
+            // 그냥 움직이기만 하면 따로 켜지는 기믹이 없다(움직였다는 기믹은 두지 않는다).
             var m = Played(".S . .", "R0:R");
-            AssertHas(Mechanic.ShiftMove, m);
-            AssertLacks(Mechanic.Wait | Mechanic.Wrap | Mechanic.VoidSkip, m);
+            AssertLacks(Mechanic.Wait | Mechanic.Wrap | Mechanic.VoidSkip | Mechanic.Blocked, m);
         }
 
         [Test]
         public void Shift_SheepWrapsAtLineEnd()
         {
-            AssertHas(Mechanic.ShiftMove | Mechanic.Wrap | Mechanic.SheepWrap, Played(". . .S", "R0:R"));
+            AssertHas(Mechanic.Wrap | Mechanic.SheepWrap, Played(". . .S", "R0:R"));
         }
 
         [Test]
@@ -81,19 +81,23 @@ namespace Sheepft.Tests
         [Test]
         public void Shift_EmptyLineIsWait()
         {
-            var m = Played(". .\n.S .", "R0:R");
-            AssertHas(Mechanic.Wait, m);
-            AssertLacks(Mechanic.ShiftMove, m);
+            AssertHas(Mechanic.Wait, Played(". .\n.S .", "R0:R"));
+        }
+
+        [Test]
+        public void Shift_MovingLineIsNotWait()
+        {
+            AssertLacks(Mechanic.Wait, Played(".S .\n. .", "R0:R"));
         }
 
         [Test]
         public void Mechanics_AreClearedEachTurn()
         {
-            var board = TestLevel.Make(".S . .\n. . .", target: 0);
+            var board = TestLevel.Make(". . .S\n. . .", target: 0);
             TestLevel.Play(board, "R0:R");
-            AssertHas(Mechanic.ShiftMove, board.Mechanics);
+            AssertHas(Mechanic.SheepWrap, board.Mechanics);
             TestLevel.Play(board, "R1:R");
-            AssertLacks(Mechanic.ShiftMove, board.Mechanics);
+            AssertLacks(Mechanic.SheepWrap, board.Mechanics);
             AssertHas(Mechanic.Wait, board.Mechanics);
         }
 
@@ -169,17 +173,15 @@ namespace Sheepft.Tests
         // ── 늑대 ──
 
         [Test]
-        public void Wolf_WalksTowardSheep()
+        public void Wolf_WalkingIsNotNoPath()
         {
-            AssertHas(Mechanic.WolfWalk, Played(".W . .S\n. . .", "R1:R"));
+            AssertLacks(Mechanic.WolfNoPath, Played(".W . .S\n. . .", "R1:R"));
         }
 
         [Test]
         public void Wolf_WithNoPath()
         {
-            var m = Played(".W # .S\n# # #", "R1:R");
-            AssertHas(Mechanic.WolfNoPath, m);
-            AssertLacks(Mechanic.WolfWalk, m);
+            AssertHas(Mechanic.WolfNoPath, Played(".W # .S\n# # #", "R1:R"));
         }
 
         [Test]
@@ -235,7 +237,7 @@ namespace Sheepft.Tests
         public void Horse_CarriesSheepAndDropsItOnBasketCell()
         {
             var m = Played(".HS . . gA\n. . . .", "R1:R, R1:R");
-            AssertHas(Mechanic.HorseDiscover | Mechanic.HorseWalk | Mechanic.HorseCarry | Mechanic.HorseCarrySheep
+            AssertHas(Mechanic.HorseDiscover | Mechanic.HorseCarry | Mechanic.HorseCarrySheep
                       | Mechanic.HorseEat | Mechanic.HorseDrop | Mechanic.HorseDropSheep, m);
         }
 
@@ -249,17 +251,19 @@ namespace Sheepft.Tests
         public void Horse_WithUnreachableBasketHoldsItsRider()
         {
             // 말 감옥: 바구니가 물 위라 갈 길이 없다. 탄 늑대는 걷지 못한다.
-            var m = Played(".HW . ~A\n. . .\n.S . .\n. . .", "R3:R");
-            AssertHas(Mechanic.HorseNoPath | Mechanic.RideHeld, m);
-            AssertLacks(Mechanic.WolfWalk, m);
+            var board = TestLevel.Make(".HW . ~A\n. . .\n.S . .\n. . .", target: 0);
+            TestLevel.Play(board, "R3:R");
+            AssertHas(Mechanic.HorseNoPath | Mechanic.RideHeld, board.Mechanics);
+            Assert.AreEqual(".HW", LevelWriter.WriteCell(board.At(new Pos(0, 0))), "말도 늑대도 처음 칸 그대로다");
         }
 
         [Test]
         public void Horse_WithoutTargetDoesNotHoldItsRider()
         {
-            var m = Played(".HW . .\n. . .\n.S . .\n. . .", "R3:R");
-            AssertLacks(Mechanic.RideHeld, m);
-            AssertHas(Mechanic.WolfWalk, m);
+            var board = TestLevel.Make(".HW . .\n. . .\n.S . .\n. . .", target: 0);
+            TestLevel.Play(board, "R3:R");
+            AssertLacks(Mechanic.RideHeld, board.Mechanics);
+            Assert.AreEqual(".W", LevelWriter.WriteCell(board.At(new Pos(1, 0))), "늑대가 양 쪽으로 걸었다");
         }
 
         [Test]
@@ -273,7 +277,7 @@ namespace Sheepft.Tests
         [Test]
         public void Cow_PushesSheep()
         {
-            AssertHas(Mechanic.CowSmell | Mechanic.CowWalk | Mechanic.CowPush | Mechanic.CowPushSheep,
+            AssertHas(Mechanic.CowSmell | Mechanic.CowPush | Mechanic.CowPushSheep,
                 Played(".M .S . .A\n. . . .", "R1:R"));
         }
 

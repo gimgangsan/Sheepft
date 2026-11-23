@@ -37,7 +37,6 @@ namespace Sheepft.Core
                     continue;
                 }
 
-                board.Mark(Mechanic.ShiftMove);
                 if (wrap) board.Mark(Mechanic.Wrap);
                 else if (!IsNeighbor(line[i].Pos, dest.Pos)) board.Mark(Mechanic.VoidSkip);
                 foreach (var o in line[i].Objects)

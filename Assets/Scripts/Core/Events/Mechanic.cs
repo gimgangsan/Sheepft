@@ -17,7 +17,6 @@ namespace Sheepft.Core
         None = 0,
 
         // shift
-        ShiftMove = 1UL << 0,       // shift로 오브젝트가 움직임
         Wait = 1UL << 1,            // 아무것도 움직이지 않은 shift
         Wrap = 1UL << 2,            // 줄 끝에서 순환
         SheepWrap = 1UL << 3,
@@ -46,7 +45,6 @@ namespace Sheepft.Core
         Extinguish = 1UL << 22,
 
         // 늑대
-        WolfWalk = 1UL << 23,
         WolfNoPath = 1UL << 24,     // 양은 있는데 걸어갈 길이 없음 (감옥, 물, 들불)
         WolfMerge = 1UL << 25,
         WolfEat = 1UL << 26,        // 양이 먹힘
@@ -63,7 +61,6 @@ namespace Sheepft.Core
 
         // 말
         HorseDiscover = 1UL << 35,
-        HorseWalk = 1UL << 36,
         HorseCarry = 1UL << 37,
         HorseCarrySheep = 1UL << 38,
         HorseCarryWolf = 1UL << 39,
@@ -76,7 +73,6 @@ namespace Sheepft.Core
 
         // 소
         CowSmell = 1UL << 46,
-        CowWalk = 1UL << 47,
         CowPush = 1UL << 48,
         CowPushSheep = 1UL << 49,
         CowPushWolf = 1UL << 50,

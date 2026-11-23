@@ -177,7 +177,6 @@ namespace Sheepft.Core
             }
             b.Move(this, next, MoveCause.Walk);
             LastWalkDir = dir;
-            b.Mark(Mechanic.HorseWalk);
             b.MarkSheepMerge(sheepBefore);
         }
 

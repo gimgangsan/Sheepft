@@ -446,7 +446,7 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 | --- | --- |
 | 11-1. 저장 | `SaveData`와 `SaveFile`(위 "저장 파일 구조"). 클리어하면 별과 열린 스테이지를 기록. 지금의 `cleared`(실행 중에만 남음)를 대신한다 |
 | 11-2. 타이틀·스테이지 선택 | `MenuController`(지금 화면, 카메라 이동), 메뉴 줄 하나를 밀고 그리는 `MenuRow`, 글자 hover로 화살표 보이기, 스테이지 줄 흐르기, 풀에 들어가면 스테이지 시작, `Esc`·메뉴 버튼으로 돌아오기. 꿈 풍선은 이름과 별만 |
-| 11-3. 꿈 풍선 (2026-11-17 구현) | 고른 스테이지의 이름, 얻은 별(`hud_icons`의 `star`/`star_empty` 3개), 3별 조건(턴 아이콘 + `3 stars in N turns`), `minimap_tiles`(16×16)로 그린 맵. 잠긴 스테이지는 번호와 `Locked`만. 위치는 `GameSettings`의 "메뉴 배치: 꿈 풍선"(`menuBubbleTopLeft`, 그리고 풍선 캔버스 기준의 `menuBubbleNameTop`·`StarsTop`·`ConditionTop`·`MapCenter`, `menuBubbleFontSize`) |
+| 11-3. 꿈 풍선 (2026-11-17 구현) | 고른 스테이지의 이름, 얻은 별(`hud_icons`의 `star`/`star_empty` 3개), 3별 조건(턴 아이콘 + `3 stars in N turns`), `minimap_tiles`(16×16)로 그린 맵. 잠긴 스테이지는 번호와 `Locked`만. 위치는 `GameSettings`의 "메뉴 배치: 꿈 풍선"(`menuBubbleTopLeft`, 그리고 풍선 캔버스 기준의 `menuBubbleNameTop`·`StarsTop`·`ConditionTop`·`MapCenter`, `menuBubbleFontSize`, 풍선 판 불투명도 `menuBubbleAlpha`(0–1, 안의 내용에는 적용하지 않음)) |
 | 11-4. 설정 (2026-11-16 구현) | 설정 줄 3개, 값 저장, 이동 속도 배율. 줄 위치는 `menuSettingsRowTopLeft`(첫 줄 맨 왼쪽 칸, 기본 (96, 56))와 `menuSettingsRowSpacing`(기본 56). 오브젝트는 음악 `setting_props:music`, 효과음 `setting_props:sound`, 이동 속도는 전용 그림이 없어 임시로 `horse:idle`(`MenuController`의 `speedProp`). 음악·효과음 값은 저장만 하고, 소리를 붙이는 11-5에서 쓴다 |
 | 11-5. 다듬기 | 화면 전환 타이밍, 풀에 들어갈 때 `happy`, 소리 |
 

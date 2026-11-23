@@ -154,7 +154,6 @@ namespace Sheepft.Core
             }
             b.Move(this, Pos.Step(dir.Value), MoveCause.Walk);
             LastWalkDir = dir;
-            b.Mark(Mechanic.WolfWalk);
         }
 
         public override bool IsHeldByRide(Board b)

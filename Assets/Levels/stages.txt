@@ -7,7 +7,6 @@
 # 풀이: R1:R, R1:R, C2:U
 @desc The world around you SHIFT!
 @stars 3 4
-@intent ShiftMove
 .   .  g  .
 .S  .  .  .
 .   .  .  .
@@ -23,7 +22,7 @@ g  .  .   .
 
 # Fluffy Companion  shift: R0:RL, R1:RL, R2:RL, C0:UD, C1:UD, C2:UD, C3:UD  제한 7턴  목표 양 2
 # 풀이: R2:R, R2:R, C2:D
-@desc Nothing can be pushed into a OBSTACLES.
+@desc Nothing can be pushed into OBSTACLES.
 @stars 3 4
 @intent SheepMerge
 .   .   g  .
@@ -79,7 +78,6 @@ g  .  .   .
 # 풀이: C0:U, R3:R, C1:U, R2:R
 @desc Wolves chase and eat sheep. But they get SHIFTED too.
 @stars 4 5
-@intent WolfWalk
 .   .  .   .  .
 .   .  .   .  .
 .   .  gW  .  .
@@ -122,7 +120,7 @@ gW  #   .   .   .
 
 # The Pack's Table  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 10턴  목표 양 2
 # 풀이: R0:R, R2:R, R0:R, C0:U, C0:U, R3:L, R3:L
-@desc Race of death. One must go.
+@desc A PACK's reach is wide. One must go.
 @stars 7 8
 @intent SheepMerge WolfEat
 .S  #  .    .S  .
@@ -139,40 +137,39 @@ gW  #   .   .   .
 .   .  .  .   #
 .S  ^  ~  gW  #
 
-# Burning Forest  shift: R0:R, R1:R, R2:R, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD  제한 12턴  목표 양 1
-@desc When the forest burns, the way opens. Wolves cannot walk across fire.
-@stars 6 8
+# Firewall  shift: R0:R, R1:R, R2:R, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 8턴  목표 양 1
+# 풀이: C0:U, C1:U, R0:R, R0:R, R0:R, C4:D
+@desc Nobody messes with FIRE!
+@stars 6 7
 @intent SheepWet SheepDried
-.   .  .S  .  ~  t  .
-.W  .  .   .  t  .  #
-^   t  t   t  .  #  g
+.   ~   t  .  .
+.W  .S  t  .  g
+#   #   ^  .  .
 
-# Hot-Tempered Goat  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, R5:RL, C0:UD, C1:UD, C2:U, C3:UD, C4:UD  제한 9턴  목표 양 1
-# 풀이: R1:R, R3:L, R3:L, C1:D, R2:R, R0:R
-@desc Every turn the goat knocks everything 1 and 2 tiles away, up, down, left and right, one tile outward.
+# Hot-Tempered Goat  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, R5:RL, C0:UD, C1:U, C2:UD  제한 6턴  목표 양 1
+# 풀이: R1:L, C2:D, R2:L, R4:L
+@desc Short fuse, long reach. The GOAT headbutts 2 tiles in 4 directions.
+@stars 4 5
+@intent Wrap GoatPushSheep
+.   #  .
+.G  .  .
+.   .  .S
+.   .  .
+.   .  .
+#   g  #
+
+# The True Egalitarian  shift: R0:RL, R1:RL, R2:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD  제한 9턴  목표 양 1
+# 풀이: R0:R, R2:L, R2:L, C3:D, C3:U, R0:L
+@desc Truly THE GOAT.
 @stars 6 8
-@intent GoatPushSheep
-.   .  #  .  .
-.G  .  .  .  .
-.   .  .  .  .
-.   .  .  .  .S
-.   #  .  #  .
-.   #  g  #  .
+@intent GoatPushWolf
+g  .  .W  .G  .  #
+#  #  #   .   #  #
+#  #  .   .   .  .S
 
-# Safe Behind the Stone  shift: R0:RL, R1:RL, R2:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD  제한 9턴  목표 양 1
-# 풀이: C5:D, R2:L, R2:L, R2:L, R2:L, C1:D
-@desc The goat cannot see past obstacles or gaps. Keep the wolf in front of the goat and the sheep behind a stone.
-@stars 6 8
-@intent GoatPushWolf GoatSightBlocked
-gW  .  .G  #  #  #   #
-#   .  #   #  #  .S  #
-.   .  .   .  .  .   #
-x   x  .   x  x  x   x
-x   x  .   x  x  x   x
-
-# Goat Fire Brigade  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C4:UD, C5:UD, C6:UD  제한 8턴  목표 양 1
+# Kick The Bucket  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C4:UD, C5:UD, C6:UD  제한 8턴  목표 양 1
 # 풀이: R0:L, R3:R, R3:R, R3:R, R3:R, R3:R
-@desc The goat moves the bucket on a line you cannot push. It takes two knocks: into the water to fill it, then into the fire.
+@desc Relax. Kicking the BUCKET is a good thing here.
 @stars 6 8
 @intent BucketFilled Extinguish GoatPushItem
 #   #  #  .   .G  .  #
@@ -180,83 +177,94 @@ x   x  .   x  x  x   x
 #   #  #  ~   #   #  #
 .S  .  .  ^   .   g  #
 
-# Fruit Basket  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C3:UD, C4:UD  제한 7턴  목표 양 1
+# Fight Fire with Fire  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD  제한 11턴  목표 양 1
+# 풀이: R0:L, R0:R, R2:R, R0:R, C0:D, R1:L, R1:L
+@desc One for the WATER, one for the FIRE. Choose wisely.
+@stars 7 9
+@intent SheepWrap ObstacleBurned Extinguish
+.  #   .  .  .  ~  .B
+t  .S  ^  ^  .  .  g
+.  #   .  .  .  .  .B
+^  #   #  #  #  #  #
+
+# Hitch a Ride  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C3:UD, C4:UD  제한 9턴  목표 양 1
 # 풀이: C0:U, R3:R, R2:R, R1:R, C1:U
-@desc A horse that sees a basket in its row or column walks toward it. Next to the basket it eats it and drops the sheep it carried where the basket was.
+@desc Hop on. Next stop: the FRUIT BASKET.
 @stars 5 7
 @intent HorseDropSheep
-#   #  gA  #  #
+t   t  gA  t  t
 .   .  .   .  .
 .   .  .   .  .
 .S  .  .   .  .
 .   .  .H  .  .
 
-# Wolf Taxi  shift: R0:RL, R1:RL, R2:RL, C0:UD, C1:U, C2:UD, C3:U, C4:U, C5:UD, C6:UD, C7:UD  제한 8턴  목표 양 1
-# 풀이: C0:U, R2:R, R2:R, R2:R, R2:R, R2:R
-@desc Animals riding a horse that has spotted a basket cannot act on their own. Give the wolf a ride far away.
-@stars 6 8
-@intent HorseCarryWolf
-.   .   .  .  .  .HW  #  #
-.A  #   #  #  #  .    #  #
-.   .S  .  .  .  .    g  #
-
 # Relay  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:U, C3:UD, C4:UD, C5:UD, C6:UD  제한 7턴  목표 양 1
 # 풀이: R2:L, R2:L, R2:L, R0:L, C2:U
-@desc A basket that a horse carries or drops can catch another horse's eye, and that horse sets off too.
+@desc The BASKET is the baton. The SHEEP runs the last leg.
 @stars 5 7
 @intent HorseDropSheep
 @optimal HorseLure
-gA  .  .   .  .HA  #   #
-#   #  .   #  #    #   #
-.   .  .   .  .    .S  #
-#   #  .H  #  #    #   #
+gA  .  .   .  .HA  #   t
+t   #  .   #  #    #   t
+.   .  .   .  .    .S  t
+t   #  .H  #  #    #   t
 
-# Basket Across the Water  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:U, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD  제한 9턴  목표 양 1
-# 풀이: R0:R, R2:R, C2:D, R2:R, R2:R, R2:R, R2:R
+# Basket Across the Water  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:U, C1:UD, C2:UD, C3:UD, C4:UD  제한 9턴  목표 양 1
+# 풀이: R0:R, R2:R, C2:D, R2:R, R2:R
 @desc A horse that sees a basket it cannot reach just stands there, and the wolf on its back cannot get off.
-@stars 7 9
+@stars 5 7
 @intent HorseNoPath RideHeld
-.A  .    #  #  #  #  #
-~   ~    #  #  #  #  #
-.S  .HW  .  .  .  g  #
-.   .    .  #  #  #  #
+.A  .    #  #  #
+#   ~    #  #  #
+.S  .HW  .  g  #
+.   .    .  #  #
 
-# Stubborn Cow  shift: R0:L, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD  제한 7턴  목표 양 1
-# 풀이: R2:R, R2:R, R2:R, R2:R, C5:U
-@desc The cow smells a basket within 3 tiles and walks to it, pushing whatever is ahead. When the basket hits a wall, the cow eats it and stops.
+# Wolf Taxi  shift: R3:RL, C4:UD  제한 11턴  목표 양 1
+# 풀이: C4:U, R3:R, R3:R, R3:L, R3:R, C4:D, C4:D, C4:D, C4:D
+@desc Please remain seated until the HORSE stops. Yes, WOLVES too.
+@stars 9 10
+@intent HorseDiscover
+-   -  -  -  #   -
+-   -  -  -  .S  -
+-   -  -  -  .   -
+.H  .  .  .  .   .
+-   -  -  -  .A  -
+-   -  -  -  gW  -
+
+# Stubborn Cow  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 7턴  목표 양 1
+# 풀이: R2:R, C2:D, R2:R, C2:U, R0:R
+@desc Once a COW smells FRUIT, there's no stopping it. Moo-ve with it or lose it.
 @stars 5 7
 @intent CowPushSheep
-.M  .   .A  .  .  .  g  #
-#   #   #   #  #  x  #  #
-#   .S  .   .  .  .  .  #
-#   #   #   #  #  #  #  #
+.M  .A  .  .  g
+#   t   x  t  #
+.S  .   .  #  t
+#   t   #  t  #
 
-# Cow Bulldozer  shift: R0:RL, R1:RL, R3:RL, C0:UD, C1:U, C2:U, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD  제한 8턴  목표 양 1
-# 풀이: R3:L, R3:L, R3:L, R3:L, R3:L, C2:U
-@desc The cow pushes away wolves in its path too. Go in after the wolf has been pushed off the grass.
-@stars 6 8
-@intent CowPushWolf
-#   #  #    #  #  #  #  #
-.M  .  gWA  .  .  ^  #  #
-x   x  x    x  x  x  x  x
-#   .  .    .  .  .  .  .S
+# Cow Bulldozer  shift: R0:RL, R1:RL, R2:R, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 11턴  목표 양 1
+# 풀이: R4:R, R4:R, R0:L, C1:D, C1:D, C1:D, R2:R
+@desc This COW doesn't brake for WOLVES.
+@stars 7 9
+@intent WolfBurned CowPushWolf
+.A  .  .   .  .
+#   .  #   #  #
+^   .  gW  .  .M
+#   #  #   #  #
+.   .  .   .  .S
 
-# A Day at the Ranch  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, R5:RL, R6:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD  제한 8턴  목표 양 1
-# 풀이: C7:U, C7:U, R4:L, R4:L, R4:L, R4:L, R0:R
-@desc The cow follows the smell of the basket the horse is carrying. Step onto the path after the horse has passed and before the cow arrives.
-@stars 7 8
-@intent CowPushSheep CowLure
-#   #  #  .HA  #  #  #  #
-.M  .  .  .    #  #  #  #
-#   #  #  .    #  #  #  #
-#   #  #  .    #  #  #  #
-#   .  .  .    .  .  .  .
-#   #  #  .    #  #  #  .
-#   #  #  gA   #  #  #  .S
+# Dinner Is Served  shift: R0:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:D, C7:UD  제한 11턴  목표 양 1
+# 풀이: C1:U, R0:R, R0:R, R0:R, C3:D, C1:D, C2:D, C7:U, R2:L
+@desc The COW serves. The HORSE eats. The SHEEP gets off at the GRASS.
+@stars 9 10
+@intent HorseDropSheep CowPushBasket
+.A  .M  .  .  .  .  #   #
+.   .   .  .  .  .  g   #
+#   #   #  #  #  #  .H  .
+.   .   .  .  .  .  #   .S
 
 # Night of the Wolf Pack  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:L, C0:UD, C1:UD, C2:UD, C3:UD, C4:U  제한 12턴  목표 양 2
 # 풀이: R0:L, R2:L, C1:D, R3:L, C2:U, R1:L, R3:R, C1:D, R4:L, R4:L
-@desc The wolf on the grass cannot be driven out. Gather the sheep into one flock, lure in another wolf, and slip in while the pack is stunned.
+@desc Still no ALPHA? Good. Sneak in while they decide
 @stars 10 12
 @intent SheepMerge WolfMerge StunSpared
 .W  .  .   .  .
@@ -264,6 +272,15 @@ x   x  x    x  x  x  x  x
 .   .  .S  .  .
 .S  .  .   .  #
 .   .  .   #  gW
+
+# Open Sesame!  shift: R0:RL, R1:RL, R2:R, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD  제한 15턴  목표 양 1
+# 풀이: C0:D, C1:D, R0:L, R1:R, R1:R, C0:D, R1:R, R1:R, R1:R, C3:D, R2:R, R2:R, R2:R, R2:R
+@desc Find the secret key for the gate, then the rest is easy.
+@stars 14 15
+@intent ObstacleBurned Extinguish
+.B  .B  #  .  .  #  #  #
+~   .   .  ^  .  #  #  #
+.B  .S  #  .  .  t  .  g
 
 # The Last Meadow  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C6:UD, C7:UD  제한 13턴  목표 양 2
 # 풀이: C0:D, C0:D, R3:R, R3:R, R3:R, C3:U, C6:D, R0:L, R3:R, R4:L, R3:R
