@@ -178,7 +178,10 @@ namespace Sheepft.Game
 
                 // power_charge는 몸을 감아 주먹을 뒤로 뺀 자세(6–8프레임)부터 나온다.
                 if (frame >= WindUp && chargeEffect == null)
+                {
                     chargeEffect = Effect("power_charge", FistPoint(sheepBase, s.endingChargeFist, side), ChargeOrder, out _);
+                    SoundManager.Play(Sound.UppercutCharge);
+                }
 
                 float k = Mathf.SmoothStep(0f, 1f, t / charging);
                 PlaceCamera(Vector3.Lerp(camera0, focus, k), Mathf.Lerp(size0, size1, k), s.endingChargeShakePixels);
@@ -204,6 +207,9 @@ namespace Sheepft.Game
             wolfActor.rotation = Quaternion.Euler(0f, 0f, -side * s.endingWolfHitTilt);
             impactEffect = Effect("uppercut_impact", fist, ImpactOrder, out impactBody);
             if (impactBody != null) impactBody.flipX = side < 0;
+            // 모으던 소리를 끊고 타격음.
+            SoundManager.Stop(Sound.UppercutCharge);
+            SoundManager.Play(Sound.WolfHit);
 
             float impactToHold = 0f;
             for (int i = 0; i <= ImpactHoldFrame; i++) impactToHold += Seconds(impactSheet, i);
@@ -225,6 +231,7 @@ namespace Sheepft.Game
             for (int i = ImpactHoldFrame + 1; i <= impactLast; i++) impactRest += Seconds(impactSheet, i);
             float after = Mathf.Max(Mathf.Max(s.endingWolfFlySeconds, s.endingZoomOutSeconds),
                 Mathf.Max(s.endingBigShakeSeconds, Mathf.Max(sheepRest, impactRest)));
+            SoundManager.Play(Sound.WolfYelp);
 
             for (float t = 0f; t < after; t += Dt)
             {
@@ -291,6 +298,9 @@ namespace Sheepft.Game
         public void Abort()
         {
             if (!IsPlaying && root == null) return;
+            // 건너뛰면 컷씬 소리가 게임 화면까지 이어지지 않게 끊는다.
+            SoundManager.Stop(Sound.UppercutCharge);
+            SoundManager.Stop(Sound.WolfYelp);
             RestoreBoard();
             if (root != null) Destroy(root);
             root = null;

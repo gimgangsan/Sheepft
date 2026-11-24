@@ -338,8 +338,9 @@ namespace Sheepft.Game
             bool cannotWinBefore = Board.CannotWin;
             if (!session.Play(move)) return;
             SoundManager.Play(Sound.Shift);
-            // 장애물에 막혀 제자리에 남은 오브젝트가 있다. 이 표시는 플레이어의 shift에서만 켜진다.
-            if ((Board.Mechanics & Mechanic.Blocked) != 0) SoundManager.Play(Sound.Impact);
+            // 장애물에 막혀 제자리에 남은 오브젝트가 있으면 impact를 냈었다(이 표시는 플레이어의 shift에서만 켜진다).
+            // 막힌 칸에 뒤의 오브젝트가 들어와 겹칠 때 나는 소리처럼 들려서 2026-11-25에 잠시 껐다. 다시 쓰면 아래 줄을 살린다.
+            // if ((Board.Mechanics & Mechanic.Blocked) != 0) SoundManager.Play(Sound.Impact);
             cannotWinBeforeMove = cannotWinBefore;
             resultSoundPending = true;
             endingPending = Board.Result == GameResult.Won && Board.KnockoutAt != null;
@@ -616,6 +617,7 @@ namespace Sheepft.Game
                             view.PlayPop(s.buffPopStartScale, s.buffPopOvershoot, s.buffPopSeconds);
                         }
                         boardView.SpawnEffect("sheep_arrive", view.Pos);
+                        SoundManager.Play(Sound.SheepBuff);
                     }
                     if (view != null)
                     {
@@ -795,6 +797,9 @@ namespace Sheepft.Game
 
         private static void PlayRemoveSound(EntityView view, RemoveCause cause)
         {
+            // 생강꽃을 먹으면 양이 변하는 굵은 "메"만 낸다(상태 바뀜 쪽에서). 쓰러진 늑대는 엔딩 컷씬이 소리를 낸다.
+            if (view.Sheet == "spicebush" && cause == RemoveCause.Eaten) return;
+            if (cause == RemoveCause.KnockedOut) return;
             switch (cause)
             {
                 case RemoveCause.Eaten:

@@ -12,90 +12,154 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9089017d7f9f1c42a058caf0c611c6b, type: 3}
   m_Name: SoundLibrary
   m_EditorClassIdentifier: Sheepft.Game::Sheepft.Game.SoundLibrary
-  titleMusic: {fileID: 0}
-  gameMusic: {fileID: 0}
+  titleMusic: {fileID: 8300000, guid: d3d758d2da3c33e4a990fd4f54e44513, type: 3}
+  gameMusic: {fileID: 8300000, guid: d3d758d2da3c33e4a990fd4f54e44513, type: 3}
   musicVolume: 0.7
   shift:
+    clips:
+    - {fileID: 8300000, guid: 77a8cf897a2ffec40b8cb1b9dbf76b16, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0
   step:
+    clips:
+    - {fileID: 8300000, guid: b706a969cdfd1f6469a332d3fe9ef0fe, type: 3}
+    - {fileID: 8300000, guid: edb6be000ce2d2c4db24d4e8be7f2730, type: 3}
+    - {fileID: 8300000, guid: 98fc4298e92ecc24f9baedb85d14d4e4, type: 3}
+    - {fileID: 8300000, guid: cee74bf6dfedbc24aafa2577ee4b4f22, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.1
     delay: 0
   impact:
+    clips:
+    - {fileID: 8300000, guid: 95003cd5b8d52184b8e76ac799f39799, type: 3}
+    - {fileID: 8300000, guid: d2b3adbf1862c974f8ddb9752901b176, type: 3}
+    - {fileID: 8300000, guid: 89a9bfbc8b394bb4aac4e644ac2932ae, type: 3}
+    - {fileID: 8300000, guid: dac554b3b9a04ac468ff088a4b5f1638, type: 3}
+    - {fileID: 8300000, guid: ee85cdb323beceb40a42cf10e79dcc09, type: 3}
+    - {fileID: 8300000, guid: 29fafc8612420bc49ae33b3ab15e7329, type: 3}
+    - {fileID: 8300000, guid: 335eddc026fd7b74685d8add43eb8bf5, type: 3}
+    - {fileID: 8300000, guid: 0c41a0b9218bde246ac090de7c7567cc, type: 3}
+    - {fileID: 8300000, guid: 72375e9107fa6b74c82d9e8ad041b38e, type: 3}
+    - {fileID: 8300000, guid: dbe097cd8cdafde49b7df35873050626, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.1
     delay: 0
   eat:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   wolfEat:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   sheepEaten:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0.1
   sheepArrive:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0
   horseNeigh:
+    clips:
+    - {fileID: 8300000, guid: debbdae79edba354499caa6c009cd089, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0
   cowMoo:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0
   splash:
+    clips:
+    - {fileID: 8300000, guid: 5d29baa3fba8bbd48ad3c13a7c1af6bd, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   sizzle:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   fire:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   click:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   win:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   lose:
+    clips: []
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   star:
+    clips:
+    - {fileID: 8300000, guid: 91309c2643214204e925436f00b0b225, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   starPitches:
+  - 0.8
   - 1
-  - 1.26
-  - 1.5
+  - 1.25
+  transition:
+    clips: []
+    clip: {fileID: 0}
+    volume: 1
+    pitchJitter: 0
+    delay: 0
+  sheepBuff:
+    clips: []
+    clip: {fileID: 0}
+    volume: 1
+    pitchJitter: 0
+    delay: 0
+  uppercutCharge:
+    clips: []
+    clip: {fileID: 0}
+    volume: 1
+    pitchJitter: 0
+    delay: 0
+  wolfHit:
+    clips: []
+    clip: {fileID: 0}
+    volume: 1
+    pitchJitter: 0
+    delay: 0
+  wolfYelp:
+    clips: []
+    clip: {fileID: 0}
+    volume: 1
+    pitchJitter: 0
+    delay: 0

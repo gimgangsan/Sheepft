@@ -118,6 +118,7 @@ namespace Sheepft.Game
         {
             Active = true;
             canvasObject.SetActive(true);
+            SoundManager.Play(Sound.Transition);
             yield return PlayTag("cover");
 
             try

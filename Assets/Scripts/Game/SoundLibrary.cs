@@ -21,13 +21,24 @@ namespace Sheepft.Game
         Click,
         Win,
         Lose,
-        Star
+        Star,
+        Transition,
+        SheepBuff,
+        UppercutCharge,
+        WolfHit,
+        WolfYelp
     }
 
     [Serializable]
-    public sealed class SoundEntry
+    public sealed class SoundEntry : ISerializationCallbackReceiver
     {
-        public AudioClip clip;
+        [Tooltip("여러 개 넣으면 재생할 때마다 하나를 무작위로 고른다. 같은 소리가 연달아 나지 않게 직전에 고른 것은 피한다.")]
+        public AudioClip[] clips = new AudioClip[0];
+
+        /// <summary>예전(소리 하나만 넣던 때)의 칸. 불러올 때 clips 맨 앞으로 옮기고 비운다.</summary>
+        [SerializeField, HideInInspector] private AudioClip clip;
+
+        [NonSerialized] private int lastPick = -1;
 
         [Range(0f, 1f)] public float volume = 1f;
 
@@ -45,6 +56,59 @@ namespace Sheepft.Game
         {
             this.pitchJitter = pitchJitter;
             this.delay = delay;
+        }
+
+        /// <summary>넣어 둔 소리가 하나라도 있는가.</summary>
+        public bool HasClip
+        {
+            get
+            {
+                if (clips == null) return false;
+                foreach (var c in clips) if (c != null) return true;
+                return false;
+            }
+        }
+
+        /// <summary>재생할 소리 하나. 둘 이상이면 직전에 고른 것을 빼고 무작위로 고른다. 없으면 null.</summary>
+        public AudioClip Pick()
+        {
+            if (clips == null) return null;
+            int count = 0;
+            foreach (var c in clips) if (c != null) count++;
+            if (count == 0) return null;
+
+            int pick = UnityEngine.Random.Range(0, count);
+            if (count > 1 && pick == lastPick) pick = (pick + 1 + UnityEngine.Random.Range(0, count - 1)) % count;
+            lastPick = pick;
+            foreach (var c in clips)
+            {
+                if (c == null) continue;
+                if (pick-- == 0) return c;
+            }
+            return null;
+        }
+
+        public bool Contains(AudioClip audioClip)
+        {
+            return audioClip != null && clips != null && Array.IndexOf(clips, audioClip) >= 0;
+        }
+
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
+            if (clip == null) return;
+            if (clips == null) clips = new AudioClip[0];
+            if (Array.IndexOf(clips, clip) < 0)
+            {
+                var moved = new AudioClip[clips.Length + 1];
+                moved[0] = clip;
+                Array.Copy(clips, 0, moved, 1, clips.Length);
+                clips = moved;
+            }
+            clip = null;
         }
     }
 
@@ -71,7 +135,7 @@ namespace Sheepft.Game
         [Tooltip("늑대·말·소가 1칸 걸을 때. 여러 마리가 같이 걸어도 한 번만 난다.")]
         public SoundEntry step = new SoundEntry(0.1f);
 
-        [Tooltip("shift가 장애물에 막힘, 염소 박치기, 소가 앞 칸을 밈, 늑대 합류(싸움). 메뉴에서 잠긴 스테이지와 설정 줄 끝의 돌에 막힐 때도.")]
+        [Tooltip("염소 박치기, 소가 앞 칸을 밈, 늑대 합류(싸움). 메뉴에서 잠긴 스테이지와 설정 줄 끝의 돌에 막힐 때도. (shift가 장애물에 막힐 때는 잠시 껐다: GameController.Play)")]
         public SoundEntry impact = new SoundEntry(0.1f);
 
         [Header("먹기")]
@@ -120,6 +184,22 @@ namespace Sheepft.Game
         [Tooltip("별 번호(왼쪽부터)마다의 피치. 기본은 도·미·솔.")]
         public float[] starPitches = { 1f, 1.26f, 1.5f };
 
+        [Tooltip("구름 화면 전환이 화면을 덮기 시작할 때: 메뉴에서 스테이지 들어가기, Restart, Next, 게임에서 메뉴로.")]
+        public SoundEntry transition = new SoundEntry();
+
+        [Header("엔딩")]
+        [Tooltip("양이 생강꽃(spicebush)을 먹고 근육질 양이 될 때의 굵은 \"메\".")]
+        public SoundEntry sheepBuff = new SoundEntry();
+
+        [Tooltip("엔딩 컷씬에서 주먹에 기운(power_charge)이 모이기 시작할 때. 소리가 길어도 주먹이 늑대를 치는 순간 끊긴다.")]
+        public SoundEntry uppercutCharge = new SoundEntry();
+
+        [Tooltip("엔딩 컷씬에서 어퍼컷이 늑대에 맞아 시간이 멈추는 순간의 경쾌한 타격음.")]
+        public SoundEntry wolfHit = new SoundEntry();
+
+        [Tooltip("엔딩 컷씬에서 시간이 다시 흘러 늑대가 날아갈 때의 \"깨갱\".")]
+        public SoundEntry wolfYelp = new SoundEntry();
+
         public SoundEntry Get(Sound sound)
         {
             switch (sound)
@@ -140,6 +220,11 @@ namespace Sheepft.Game
                 case Sound.Win: return win;
                 case Sound.Lose: return lose;
                 case Sound.Star: return star;
+                case Sound.Transition: return transition;
+                case Sound.SheepBuff: return sheepBuff;
+                case Sound.UppercutCharge: return uppercutCharge;
+                case Sound.WolfHit: return wolfHit;
+                case Sound.WolfYelp: return wolfYelp;
                 default: return null;
             }
         }

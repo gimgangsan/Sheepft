@@ -61,7 +61,7 @@ namespace Sheepft.Game
             int index = (int)sound;
             if (lastFrame[index] == Time.frameCount) return;
             var entry = library.Get(sound);
-            if (entry == null || entry.clip == null) return;
+            if (entry == null || !entry.HasClip) return;
             lastFrame[index] = Time.frameCount;
             float pitch = 1f + Random.Range(-entry.pitchJitter, entry.pitchJitter);
             PlayEntry(entry, pitch);
@@ -72,18 +72,30 @@ namespace Sheepft.Game
         {
             if (!Ready) return;
             var entry = library.star;
-            if (entry == null || entry.clip == null) return;
+            if (entry == null || !entry.HasClip) return;
             PlayEntry(entry, library.StarPitch(index));
+        }
+
+        /// <summary>그 효과음이 울리고 있으면 끊는다. 엔딩 컷씬의 힘 모으기처럼 다음 순간에 끊어야 하는 소리에 쓴다.</summary>
+        public static void Stop(Sound sound)
+        {
+            if (!Ready) return;
+            var entry = library.Get(sound);
+            if (entry == null || !entry.HasClip) return;
+            foreach (var source in effects)
+                if (source.isPlaying && entry.Contains(source.clip)) source.Stop();
         }
 
         private static void PlayEntry(SoundEntry entry, float pitch)
         {
             float volume = entry.volume * EffectScale;
             if (volume <= 0f) return;
+            var clip = entry.Pick();
+            if (clip == null) return;
 
             var source = FreeSource();
             source.Stop();
-            source.clip = entry.clip;
+            source.clip = clip;
             source.pitch = pitch;
             source.volume = volume;
             if (entry.delay > 0f) source.PlayDelayed(entry.delay);
