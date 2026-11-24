@@ -49,6 +49,29 @@ MonoBehaviour:
   stages: {fileID: 4900000, guid: 2344984d26f680840afda85d998756e9, type: 3}
   settings: {fileID: 11400000, guid: 0d8b64b699c48d64cae9a77366df2358, type: 2}
   sheets:
+  - name: buff_sheep
+    frames:
+    - {fileID: 2934245892992311227, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -6422851872456628035, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -1555749531647385809, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -2670184015694703210, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: 1676571194383983120, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -3488775231751453537, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: 4691272412468443433, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: 879938751988490874, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -8554250291168527517, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -2615560659121480232, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: -898108597049099415, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: 4560427203541780284, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    - {fileID: 2307373359657616263, guid: 3d58ca956c1357647a6a1bbc54726df3, type: 3}
+    durationsMs: c8000000c8000000c8000000c8000000640000007800000078000000780000003c0000002c0100002c0100003c00000096000000
+    tags:
+    - name: idle
+      from: 0
+      to: 3
+    - name: uppercut
+      from: 4
+      to: 12
   - name: cow
     frames:
     - {fileID: 608004981454897997, guid: 21fa920ad7f09f44a8e1715700129e2b, type: 3}
@@ -245,6 +268,19 @@ MonoBehaviour:
     - name: play
       from: 0
       to: 5
+  - name: power_charge
+    frames:
+    - {fileID: 2877775147821029917, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    - {fileID: -1136636477587137672, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    - {fileID: 5802668244808799973, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    - {fileID: 5564568539029923131, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    - {fileID: -7854689886685053955, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    - {fileID: 7421009974600447825, guid: 901d49045b4c48541af9a11124e0192d, type: 3}
+    durationsMs: 500000005000000050000000500000005000000050000000
+    tags:
+    - name: loop
+      from: 0
+      to: 5
   - name: sheep_arrive
     frames:
     - {fileID: 4162100013716731648, guid: e1aefed8e693c134eae66608d7012a06, type: 3}
@@ -317,6 +353,19 @@ MonoBehaviour:
     - name: play
       from: 0
       to: 7
+  - name: uppercut_impact
+    frames:
+    - {fileID: 2923442130598916895, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    - {fileID: 4810054787199225135, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    - {fileID: -1314342584018369919, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    - {fileID: 5247796312089244215, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    - {fileID: -4715321467676095133, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    - {fileID: -7193572517186984273, guid: e17a73bf848ae8f4c805933fd2ef7e4e, type: 3}
+    durationsMs: 320000003200000032000000460000004600000046000000
+    tags:
+    - name: play
+      from: 0
+      to: 5
   - name: wolf_merge_dust
     frames:
     - {fileID: -7348776217540687386, guid: e98089661d4934d40af9e321ef658bce, type: 3}
@@ -333,6 +382,14 @@ MonoBehaviour:
   - name: fruit_basket
     frames:
     - {fileID: -8087841984360126041, guid: eaa351ab85a5e2649be1ad699ca34f29, type: 3}
+    durationsMs: 64000000
+    tags:
+    - name: idle
+      from: 0
+      to: 0
+  - name: spicebush
+    frames:
+    - {fileID: -174381498780063678, guid: a9207662dce48144bbbf33b94c4fc6c3, type: 3}
     durationsMs: 64000000
     tags:
     - name: idle
@@ -723,6 +780,36 @@ MonoBehaviour:
     - name: idle
       from: 0
       to: 0
+  - name: transition_cloud
+    frames:
+    - {fileID: -2710030559387595681, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 6979622587529706045, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -8483639380776154337, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -5959718948866536523, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 8483897239344203190, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 9193396635981171314, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -8296673980825662801, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -4789346008443981252, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 6612742032400679970, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -1836157761926649219, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 4690338182913135731, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 3107889060735154048, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -858360254538422506, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -3843068575293891923, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 5060642417636920935, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 4292242407216402356, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: -976041290811860993, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 2778196022182313161, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 2701380618232603755, guid: a15e23391abdc6e42a5551d6b7131b1b, type: 3}
+    - {fileID: 0}
+    durationsMs: 3200000032000000320000003200000032000000320000003200000032000000320000003200000032000000320000003200000032000000320000003200000032000000320000003200000032000000
+    tags:
+    - name: cover
+      from: 0
+      to: 9
+    - name: reveal
+      from: 10
+      to: 19
 --- !u!114 &7431189839788926726
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -765,6 +852,10 @@ MonoBehaviour:
     prefab: {fileID: 5095175636519339410, guid: 8ba4d6f08df371f43a9e57981eccc57e, type: 3}
   - name: wooden_bucket
     prefab: {fileID: 5369281236526764900, guid: 99702083e630cea48992066658deaadc, type: 3}
+  - name: spicebush
+    prefab: {fileID: 9095773455750808038, guid: 78b799d448d4de445aa3aeca970bcb21, type: 3}
+  - name: buff_sheep
+    prefab: {fileID: 1051409263702992020, guid: 02ad2f4169e69044c9d6c924d6510e13, type: 3}
   terrain:
   - name: ground
     prefab: {fileID: 2140808306871207391, guid: 7132d195c93d0de4880bdab583b1f017, type: 3}
@@ -803,5 +894,9 @@ MonoBehaviour:
     prefab: {fileID: 3339631910582933517, guid: cae455ac69fae4948ac4cb05f52c5d3a, type: 3}
   - name: eat_crumbs
     prefab: {fileID: 4207539479380071955, guid: 0c4a942c814395d43924798000e21abb, type: 3}
+  - name: power_charge
+    prefab: {fileID: 4182059393654738114, guid: 36fb8d90844a78147a876076c8545cbb, type: 3}
+  - name: uppercut_impact
+    prefab: {fileID: 1696322817533695569, guid: 416776857c233d348b4b307725491691, type: 3}
   shiftArrow: {fileID: 7531627783278068258, guid: e52d58859d1d22e44be3d428105f75d4, type: 3}
   lineHighlight: {fileID: 5389142726685360683, guid: 4a4957b7a85850a4783f2702ce388d1c, type: 3}

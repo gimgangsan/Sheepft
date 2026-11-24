@@ -29,14 +29,25 @@ namespace Sheepft.Core
             return StunLeft > 0 || MealLeft > 0 || base.IsIncapacitated(b);
         }
 
-        // ── 겹침 상호작용: 합류 ──
+        // ── 겹침 상호작용: 근육질 양에게 쓰러짐, 합류 ──
 
         /// <summary>
-        /// 화상이 아닌 늑대끼리 같은 칸이 되면 하나의 무리가 된다.
+        /// 근육질 양과 같은 칸이 되면 상태와 상관없이 쓰러진다(사라짐). 합류보다 먼저다.
+        /// 그렇지 않으면, 화상이 아닌 늑대끼리 같은 칸이 되면 하나의 무리가 된다.
         /// 그 칸에서 Id가 가장 작은 화상 아닌 늑대가 나머지를 한 번에 흡수한다. 구현 계획 2절 표.
         /// </summary>
         public override bool OnOverlap(Board b, Tile t)
         {
+            foreach (var o in t.Objects)
+            {
+                var sheep = o as Sheep;
+                if (sheep != null && sheep.Buff)
+                {
+                    b.KnockOut(this);
+                    return true;
+                }
+            }
+
             if (Burned) return false;
 
             List<Wolf> others = null;
@@ -76,7 +87,7 @@ namespace Sheepft.Core
         /// <summary>
         /// 잡는 범위(무리를 중심으로 한 정사각형, 장애물 무시, 순환 없음) 안의 양을
         /// 한 번에 최대 마리 수만큼 먹는다. 가까운 칸부터, 거리가 같으면 행 우선,
-        /// 한 칸 안에서는 젖거나 화상 입은 양 먼저다.
+        /// 한 칸 안에서는 젖거나 화상 입은 양 먼저다. 근육질 양은 먹지 않는다.
         /// </summary>
         public override bool TryAutoReact(Board b, AutoReaction k)
         {
@@ -87,7 +98,7 @@ namespace Sheepft.Core
             foreach (var o in b.Objects)
             {
                 var sheep = o as Sheep;
-                if (sheep == null || Ring(sheep.Pos) > range) continue;
+                if (sheep == null || sheep.Buff || Ring(sheep.Pos) > range) continue;
                 if (inRange == null) inRange = new List<Sheep>();
                 inRange.Add(sheep);
             }

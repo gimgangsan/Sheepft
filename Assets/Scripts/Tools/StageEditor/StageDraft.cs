@@ -9,7 +9,7 @@ namespace Sheepft.Tools
     /// <summary>칸 하나의 오브젝트 묶음. 표기의 `S2`, `W(w)`, `B` 하나에 해당한다.</summary>
     public struct CellObject
     {
-        public char Letter;   // S W G H A B U M
+        public char Letter;   // S W G H A B U M P
         public int Count;     // 1 이상. 늑대는 무리의 마리 수
         public char State;    // '\0' 없음, 'w' 젖음, 'b' 화상
 

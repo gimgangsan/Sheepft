@@ -17,7 +17,9 @@ namespace Sheepft.Core
         Eaten,
         Burned,
         Merged,
-        Destroyed
+        Destroyed,
+        /// <summary>늑대가 근육질 양에게 맞아 쓰러짐. 엔딩 컷씬이 나온다.</summary>
+        KnockedOut
     }
 
     /// <summary>켜지고 꺼지는 상태. 양동이의 물 참도 여기에 넣는다.</summary>
@@ -31,7 +33,9 @@ namespace Sheepft.Core
         /// <summary>늑대의 식사.</summary>
         Eating,
         /// <summary>말·소의 배부름.</summary>
-        Full
+        Full,
+        /// <summary>양이 생강꽃을 먹고 근육질 양이 됨.</summary>
+        Buff
     }
 
     /// <summary>

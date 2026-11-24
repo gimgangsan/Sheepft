@@ -61,6 +61,90 @@ namespace Sheepft.Game
         [Tooltip("결과 판이 흔들리는 시간(초).")]
         [Min(0f)] public float starShakeSeconds = 0.15f;
 
+        [Header("근육질 양이 되는 순간 (생강꽃을 먹음)")]
+        [Tooltip("근육질 양이 처음 나타날 때의 크기(제 크기의 배수). 0.4면 보통 양 크기쯤에서 커진다.")]
+        [Min(0.01f)] public float buffPopStartScale = 0.4f;
+
+        [Tooltip("커지다가 넘치는 크기(제 크기의 배수). 그다음 제 크기로 돌아온다.")]
+        [Min(1f)] public float buffPopOvershoot = 1.15f;
+
+        [Tooltip("커졌다가 돌아오기까지(초).")]
+        [Min(0.01f)] public float buffPopSeconds = 0.3f;
+
+        [Header("엔딩 컷씬 (근육질 양이 늑대를 쓰러뜨림)")]
+        [Tooltip("컷씬 전체 시간의 배율. 아래의 모든 시간과 스프라이트 프레임 길이에 곱한다. " +
+                 "1이면 그대로, 1.5면 1.5배 느리게, 0.5면 두 배 빠르게. 늑대가 날아가는 거리는 그대로다.")]
+        [Min(0.1f)] public float endingTimeScale = 1f;
+
+        [Tooltip("양과 늑대만 남기고 화면이 검게 가려지는 시간(초). 그동안 늑대는 양 앞으로 물러선다.")]
+        [Min(0.01f)] public float endingDarkenSeconds = 0.6f;
+
+        [Tooltip("양의 발밑 가운데에서 늑대 발밑 가운데까지의 거리(픽셀). 늑대가 양과 마주 서는 자리다.")]
+        public float endingWolfFrontPixels = 44f;
+
+        [Tooltip("7·8프레임을 반복하며 힘을 모으는 시간(초). 5·6프레임은 이 앞에 한 번 나온다.")]
+        [Min(0f)] public float endingChargeSeconds = 1.5f;
+
+        [Tooltip("힘을 모으는 동안 양과 늑대 쪽으로 다가가는 배율. 2면 화면이 두 배로 커진다.")]
+        [Min(1f)] public float endingFocusZoom = 2f;
+
+        [Tooltip("다가간 화면의 가운데 높이(픽셀). 양과 늑대 발밑에서 잰다.")]
+        public float endingFocusHeightPixels = 40f;
+
+        [Tooltip("힘을 모으는 동안 화면이 떨리는 폭(픽셀, 32px = 1칸).")]
+        [Min(0f)] public float endingChargeShakePixels = 1f;
+
+        [Tooltip("buff_sheep 7·8프레임에서 power_charge를 놓는 왼쪽 주먹(캔버스 왼쪽 위 기준 픽셀). 양이 오른쪽을 볼 때 기준이다.")]
+        public Vector2 endingChargeFist = new Vector2(17f, 66f);
+
+        [Tooltip("buff_sheep 10프레임에서 uppercut_impact를 놓는 치켜든 주먹(캔버스 왼쪽 위 기준 픽셀).")]
+        public Vector2 endingHitFist = new Vector2(69f, 11f);
+
+        [Tooltip("10프레임에서 시간이 멈춰 있는 시간(초). 그동안 uppercut_impact는 3프레임까지 재생하고 멈춘다.")]
+        [Min(0f)] public float endingHitstopSeconds = 0.35f;
+
+        [Tooltip("맞는 순간 늑대 몸 가운데를 주먹에서 얼마나 옮겨 놓을지(픽셀). 늑대가 양 오른쪽에 있을 때 기준이다.")]
+        public Vector2 endingWolfHitOffsetPixels = new Vector2(6f, 6f);
+
+        [Tooltip("맞는 순간 늑대가 뒤로 젖혀지는 각도(도).")]
+        public float endingWolfHitTilt = 25f;
+
+        [Tooltip("늑대가 날아가는 속도(칸/초).")]
+        [Min(0f)] public float endingWolfFlySpeed = 16f;
+
+        [Tooltip("늑대가 날아가는 방향. 늑대가 양 오른쪽에 있을 때 기준이고, 왼쪽이면 x를 뒤집는다.")]
+        public Vector2 endingWolfFlyDirection = new Vector2(0.5f, 1f);
+
+        [Tooltip("늑대가 날아가며 도는 속도(도/초). 0이면 돌지 않는다.")]
+        public float endingWolfSpinPerSecond = 1080f;
+
+        [Tooltip("늑대가 날아가는 시간(초). 지나면 숨긴다.")]
+        [Min(0f)] public float endingWolfFlySeconds = 0.9f;
+
+        [Tooltip("시간이 다시 흐른 뒤 원래 화면 크기로 물러나는 시간(초).")]
+        [Min(0.01f)] public float endingZoomOutSeconds = 0.25f;
+
+        [Tooltip("타격 뒤 화면이 크게 떨리는 폭(픽셀). 시간이 지나며 줄어든다.")]
+        [Min(0f)] public float endingBigShakePixels = 8f;
+
+        [Tooltip("타격 뒤 화면이 떨리는 시간(초).")]
+        [Min(0f)] public float endingBigShakeSeconds = 0.6f;
+
+        [Tooltip("화면이 하얗게 덮이는 시간(초).")]
+        [Min(0.01f)] public float endingWhiteSeconds = 1.5f;
+
+        [Tooltip("하얗게 덮인 채 기다리는 시간(초).")]
+        [Min(0f)] public float endingWhiteHoldSeconds = 0.3f;
+
+        [Tooltip("하얀 막이 걷히며 원래 게임 화면과 결과 창이 나타나는 시간(초).")]
+        [Min(0.01f)] public float endingRevealSeconds = 0.6f;
+
+        [Tooltip("화면을 덮는 색.")]
+        public Color endingFadeColor = Color.white;
+
+        [Tooltip("컷씬이 시작된 뒤 이 시간이 지나야 클릭이나 키로 건너뛸 수 있다(초).")]
+        [Min(0f)] public float endingSkipDelaySeconds = 0.5f;
+
         [Header("도착 칸 표시 (shift 화살표에 마우스를 올렸을 때)")]
         [Tooltip("동물 그림의 크기(원래 크기의 배수).")]
         [Min(0.1f)] public float arrivalIconScale = 0.5f;

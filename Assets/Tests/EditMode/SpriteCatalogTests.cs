@@ -32,8 +32,8 @@ namespace Sheepft.Tests
         public void Catalog_EverySheetHasItsFirstFrame()
         {
             var catalog = Load();
-            // SPRITES.md "개수"의 합계와 같다(메뉴 화면 6개 포함).
-            Assert.AreEqual(42, catalog.sheets.Count);
+            // SPRITES.md "개수"의 합계와 같다(메뉴 화면 7개, 엔딩 4개 포함).
+            Assert.AreEqual(47, catalog.sheets.Count);
             foreach (var sheet in catalog.sheets)
             {
                 Assert.Greater(sheet.frames.Length, 0, sheet.name);
@@ -93,6 +93,10 @@ namespace Sheepft.Tests
         [TestCase("tree", 1)]
         [TestCase("ash", 1)]
         [TestCase("fruit_basket", 1)]
+        [TestCase("spicebush", 1)]
+        // 엔딩 컷씬은 buff_sheep의 프레임 번호로 동작을 맞춘다(idle 0–3, uppercut 4–12).
+        [TestCase("buff_sheep", 13)]
+        [TestCase("uppercut_impact", 6)]
         public void Catalog_HasFrameCount(string sheetName, int frames)
         {
             var sheet = Load().Get(sheetName);

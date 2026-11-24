@@ -43,6 +43,12 @@ namespace Sheepft.Core
         /// <summary>이번 턴에 쓰인 기믹. 스테이지 검증용이고 화면은 읽지 않는다. 턴을 시작할 때 비운다.</summary>
         public Mechanic Mechanics;
 
+        /// <summary>
+        /// 근육질 양이 늑대를 쓰러뜨린 칸. 없으면 null이다. 쓰러뜨리면 승리 조건이 성립한다(README 8절).
+        /// 화면은 이 칸에서 엔딩 컷씬을 보여 준다.
+        /// </summary>
+        public Pos? KnockoutAt;
+
         /// <summary>레벨을 열 때의 지형. 레벨 중에 바뀌지 않는다. "처음에 울타리·나무였던 칸" 판정에 쓴다.</summary>
         private TerrainType[,] initialTerrain;
 
@@ -326,6 +332,24 @@ namespace Sheepft.Core
             Events.Clear();
         }
 
+        /// <summary>양의 근육질을 정한다. 바뀌었으면 true.</summary>
+        public bool SetBuff(Sheep sheep, bool buff)
+        {
+            if (sheep.Buff == buff) return false;
+            sheep.Buff = buff;
+            Events.Add(new StatusChangedEvent(sheep.Id, StatusKind.Buff, buff));
+            return true;
+        }
+
+        /// <summary>늑대가 근육질 양에게 쓰러졌다. 늑대를 없애고 그 칸을 적어 둔다.</summary>
+        public void KnockOut(Wolf wolf)
+        {
+            var at = wolf.Pos;
+            Remove(wolf, RemoveCause.KnockedOut);
+            if (KnockoutAt == null) KnockoutAt = at;
+            Mark(Mechanic.WolfKnockout);
+        }
+
         /// <summary>말·소의 배부름을 정한다. 바뀌었으면 true.</summary>
         public bool SetFull(BasketSeeker animal, bool full)
         {
@@ -362,19 +386,32 @@ namespace Sheepft.Core
             return n;
         }
 
-        /// <summary>승리 조건이 지금 성립하는가. 목표 양 수가 0인 레벨은 승리 판정을 하지 않는다.</summary>
+        /// <summary>
+        /// 승리 조건이 지금 성립하는가. 근육질 양이 늑대를 쓰러뜨렸거나, 풀 위의 양이 목표 수 이상이다.
+        /// 목표 양 수가 0인 레벨은 풀 쪽 판정을 하지 않는다.
+        /// </summary>
         public bool IsWinConditionMet()
         {
+            if (KnockoutAt != null) return true;
             return Rules.TargetSheep > 0 && SheepOnGrass() >= Rules.TargetSheep;
         }
 
-        /// <summary>풀이 하나도 남지 않았다. 패배는 아니지만 승리 조건이 사라진 상태다.</summary>
+        /// <summary>
+        /// 승리할 길이 없어진 상태. 패배는 아니다. 풀이 하나도 남지 않았고,
+        /// 늑대를 쓰러뜨릴 길(생강꽃이나 근육질 양)도 없다. 엔딩 스테이지는 풀 없이 늑대를 쓰러뜨려 이긴다.
+        /// </summary>
         public bool CannotWin
         {
             get
             {
                 foreach (var t in Tiles)
                     if (!t.IsBlank && t.Terrain.Type == TerrainType.Grass) return false;
+                foreach (var o in Objects)
+                {
+                    if (o is Spicebush) return false;
+                    var sheep = o as Sheep;
+                    if (sheep != null && sheep.Buff) return false;
+                }
                 return true;
             }
         }
@@ -401,6 +438,7 @@ namespace Sheepft.Core
             board.TurnsUsed = TurnsUsed;
             board.Result = Result;
             board.TurnEnding = TurnEnding;
+            board.KnockoutAt = KnockoutAt;
             return board;
         }
     }

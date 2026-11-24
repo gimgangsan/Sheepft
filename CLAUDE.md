@@ -19,8 +19,8 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 
 | 위치 | 넣는 것 |
 | --- | --- |
-| `Assets/Sprites/Animals/` | 동물: 양, 늑대, 염소, 말, 소 |
-| `Assets/Sprites/Objects/` | 물건: 과일 바구니, 나무 양동이 |
+| `Assets/Sprites/Animals/` | 동물: 양, 늑대, 염소, 말, 소, 엔딩의 근육질 양(`buff_sheep`, 80×80) |
+| `Assets/Sprites/Objects/` | 물건: 과일 바구니, 나무 양동이, 생강꽃 |
 | `Assets/Sprites/Terrain/` | 지형 타일: 땅, 돌, 울타리, 나무, 물, 들불, 풀, 재 |
 | `Assets/Sprites/UI/` | 버튼, 아이콘, 표시 등 UI 그래픽. 메뉴 배경(`menu_background.aseprite`, 1920×360)과 로고도 여기에 둔다 |
 | `Assets/Sprites/Effects/` | 반응 연출 이펙트: 물보라, 수증기, 연기, 충격파 등 |
@@ -149,7 +149,7 @@ Unity 쪽 패키지(`com.coplaydev.unity-mcp`, v10.3.0)는 `Packages/manifest.js
 | 지형, 이펙트 | `Assets/Prefabs/Terrain/`, `Assets/Prefabs/Effects/` |
 | 애니메이션 | `.aseprite`의 태그. Aseprite Importer가 태그마다 AnimationClip과 Animator Controller를 만든다. 상태 이름이 태그 이름이다 |
 | UI 배치, 글자 크기·색, 문구 | `Assets/Prefabs/UI/GameUI.prefab` (Canvas, 기준 640×360, `GameUI` 컴포넌트) |
-| 이동 시간, 간격, 배경색 | `Assets/Data/GameSettings.asset` |
+| 이동 시간, 간격, 배경색, 엔딩 컷씬(시간·줌·떨림·주먹 위치) | `Assets/Data/GameSettings.asset` |
 | 어떤 프리팹을 쓸지 | `GameRoot.prefab`의 `PrefabCatalog` |
 
 - 스프라이트를 추가하거나 `.aseprite`의 프레임·태그를 바꾸면 Unity 메뉴 **Sheepft > Setup Game Scene**을 다시 돌린다. 배치 모드로는 `-executeMethod Sheepft.Game.GameSceneSetup.Setup`이다.

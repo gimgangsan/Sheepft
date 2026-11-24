@@ -25,7 +25,7 @@ namespace Sheepft.Tests
         public void Catalog_HasEveryEntityPrefab_WithBodyAndAnimators()
         {
             var catalog = Load();
-            foreach (var name in new[] { "sheep", "wolf", "goat", "horse", "cow", "fruit_basket", "wooden_bucket" })
+            foreach (var name in new[] { "sheep", "wolf", "goat", "horse", "cow", "fruit_basket", "wooden_bucket", "spicebush", "buff_sheep" })
             {
                 var prefab = catalog.Entity(name);
                 Assert.IsNotNull(prefab, name + " 프리팹");
@@ -34,8 +34,8 @@ namespace Sheepft.Tests
                 Assert.IsNotNull(view.body, name + "의 body");
                 Assert.IsNotNull(view.body.sprite, name + "의 body 그림");
                 Assert.IsNotNull(view.bodyAnimator, name + "의 bodyAnimator");
-                // 과일 바구니는 한 프레임짜리라 Aseprite Importer가 Animator Controller를 만들지 않는다.
-                if (name != "fruit_basket")
+                // 과일 바구니와 생강꽃은 한 프레임짜리라 Aseprite Importer가 Animator Controller를 만들지 않는다.
+                if (name != "fruit_basket" && name != "spicebush")
                     Assert.IsNotNull(view.bodyAnimator.runtimeAnimatorController, name + "의 Animator Controller");
                 Assert.IsNotNull(view.icon, name + "의 icon");
                 Assert.IsNotNull(view.iconAnimator, name + "의 iconAnimator");
@@ -63,7 +63,7 @@ namespace Sheepft.Tests
             foreach (var name in new[]
             {
                 "splash", "steam", "ignite", "smoke", "goat_shockwave", "cow_impact",
-                "wolf_merge_dust", "sheep_eaten", "sheep_arrive", "eat_crumbs",
+                "wolf_merge_dust", "sheep_eaten", "sheep_arrive", "eat_crumbs", "uppercut_impact",
             })
             {
                 var prefab = catalog.Effect(name);
@@ -73,6 +73,14 @@ namespace Sheepft.Tests
                 Assert.IsNotNull(effect.animator, name + "의 Animator");
                 Assert.IsNotNull(effect.animator.runtimeAnimatorController, name + "의 Animator Controller");
             }
+
+            // 반복 이펙트는 스스로 사라지지 않는다. 엔딩 컷씬이 만들고 지운다.
+            var charge = catalog.Effect("power_charge");
+            Assert.IsNotNull(charge, "power_charge 프리팹");
+            Assert.IsNull(charge.GetComponent<OneShotEffect>(), "power_charge에는 OneShotEffect가 없어야 한다");
+            var chargeAnimator = charge.GetComponentInChildren<Animator>();
+            Assert.IsNotNull(chargeAnimator, "power_charge의 Animator");
+            Assert.IsNotNull(chargeAnimator.runtimeAnimatorController, "power_charge의 Animator Controller");
             Assert.IsNotNull(catalog.shiftArrow, "shift 화살표 프리팹");
             Assert.IsNotNull(catalog.shiftArrow.GetComponentInChildren<SpriteRenderer>());
             Assert.IsNotNull(catalog.lineHighlight, "줄 표시 프리팹");

@@ -80,6 +80,10 @@ namespace Sheepft.Core
         CowEat = 1UL << 52,
         CowNoPath = 1UL << 53,
         CowLure = 1UL << 54,        // 말이 옮긴 바구니의 냄새를 맡음
+
+        // 생강꽃 (엔딩)
+        SheepBuff = 1UL << 55,      // 양이 생강꽃을 먹고 근육질 양이 됨
+        WolfKnockout = 1UL << 56,   // 근육질 양이 늑대를 쓰러뜨림
     }
 
     public static class MechanicText

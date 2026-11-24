@@ -51,6 +51,33 @@ MonoBehaviour:
   starSquash: 0.15
   starShakePixels: 3
   starShakeSeconds: 0.15
+  buffPopStartScale: 0.4
+  buffPopOvershoot: 1.15
+  buffPopSeconds: 0.3
+  endingTimeScale: 1.3
+  endingDarkenSeconds: 0.6
+  endingWolfFrontPixels: 44
+  endingChargeSeconds: 2.5
+  endingFocusZoom: 1.6
+  endingFocusHeightPixels: 40
+  endingChargeShakePixels: 1
+  endingChargeFist: {x: 17, y: 66}
+  endingHitFist: {x: 69, y: 11}
+  endingHitstopSeconds: 0.6
+  endingWolfHitOffsetPixels: {x: 6, y: 6}
+  endingWolfHitTilt: 25
+  endingWolfFlySpeed: 16
+  endingWolfFlyDirection: {x: 0.5, y: 1}
+  endingWolfSpinPerSecond: 1080
+  endingWolfFlySeconds: 0.9
+  endingZoomOutSeconds: 0.25
+  endingBigShakePixels: 8
+  endingBigShakeSeconds: 0.6
+  endingWhiteSeconds: 1.5
+  endingWhiteHoldSeconds: 0.3
+  endingRevealSeconds: 0.6
+  endingFadeColor: {r: 1, g: 1, b: 1, a: 1}
+  endingSkipDelaySeconds: 0.5
   arrivalIconScale: 0.5
   arrivalArrowScale: 0.5
   arrivalIconHeightPixels: 29

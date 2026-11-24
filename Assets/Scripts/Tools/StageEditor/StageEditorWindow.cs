@@ -28,8 +28,8 @@ namespace Sheepft.Tools
 
         private static readonly char[] TerrainSymbols = { '.', '#', '~', '^', 'g', 'f', 't', '_', '-', 'x' };
         private static readonly string[] TerrainNames = { "땅", "돌", "물", "들불", "풀", "울타리", "나무", "재", "외곽 빈칸", "중간 빈칸" };
-        private static readonly char[] ObjectLetters = { 'S', 'W', 'G', 'H', 'M', 'A', 'B', 'U' };
-        private static readonly string[] ObjectNames = { "양", "늑대", "염소", "말", "소", "과일 바구니", "빈 양동이", "물 찬 양동이" };
+        private static readonly char[] ObjectLetters = { 'S', 'W', 'G', 'H', 'M', 'A', 'B', 'U', 'P' };
+        private static readonly string[] ObjectNames = { "양", "늑대", "염소", "말", "소", "과일 바구니", "빈 양동이", "물 찬 양동이", "생강꽃" };
 
         // ── 편집 상태 (도메인 재로드에도 남고, Undo가 되돌리는 값) ──
         [SerializeField] private StageFile file;

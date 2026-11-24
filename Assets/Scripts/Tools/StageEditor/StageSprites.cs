@@ -102,6 +102,7 @@ namespace Sheepft.Tools
                 case 'A': return Frame("fruit_basket", "idle", 0);
                 case 'B': return Frame("wooden_bucket", "empty", 0);
                 case 'U': return Frame("wooden_bucket", "full", 0);
+                case 'P': return Frame("spicebush", "idle", 0);
                 default: return null;
             }
         }

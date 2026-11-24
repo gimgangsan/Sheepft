@@ -477,3 +477,27 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 
 - 고른 줄은 보이는 줄들의 가운데다. 위아래 2줄이면 화살표까지 7칸(224px)이 필요해서, 고른 줄 y는 96–232 사이여야 화면에 들어간다.
 - 화면을 넘나드는 칸(타이틀, 고른 스테이지 줄, 설정의 돌아가는 칸)은 모두 **같은 높이**에 둔다. 양은 같은 높이의 줄을 따라 빈칸을 건너뛰듯 넘어간다. 위아래 2줄이 들어가려면 y는 96–232여야 하고, 지금은 Inspector에서 맞춘 **y 200**이다(2026-11-16). 배경은 이 높이에 맞춰 그린다(SPRITES.md 6절).
+
+---
+
+## 12. 엔딩: 생강꽃과 근육질 양 (2026-11-24 정함)
+
+마지막 스테이지(30번)는 1줄짜리 긴 맵이고, 양이 생강꽃을 먹고 근육질 양이 되어 늑대를 쓰러뜨리면 엔딩 컷씬이 나온 뒤 클리어(별 3개)다. 규칙은 README 6절 "생강꽃"과 8절, 그림은 SPRITES.md 7절.
+
+### 로직 (`Sheepft.Core`)
+
+| 것 | 자리 |
+| --- | --- |
+| 생강꽃 `P` | `Spicebush`(나무 재질 물건). `OnOverlap`에서 같은 칸의 근육질 아닌 양(Id가 가장 작은 하나)이 먹는다. 정리 절차의 겹침 상호작용 대상에 들어간다 |
+| 근육질 양 | `Sheep.Buff`. `Board.SetBuff`가 `StatusChangedEvent(StatusKind.Buff)`를 남긴다 |
+| 쓰러짐 | `Wolf.OnOverlap` 맨 앞. 같은 칸에 근육질 양이 있으면 `Board.KnockOut` → `RemoveCause.KnockedOut`, `Board.KnockoutAt`에 칸을 적는다 |
+| 승리 | `Board.IsWinConditionMet`이 `KnockoutAt`도 본다. `CannotWin`은 생강꽃이나 근육질 양이 있으면 false |
+| 검증 | 기믹 `SheepBuff`, `WolfKnockout`. solver 인코딩(`BoardCodec`)에 생강꽃 종류와 근육질 비트 |
+
+### 화면 (`Sheepft.Game`)
+
+- 변신: 재생 중 `StatusKind.Buff`를 만나면 `BoardView.SwapSheet`로 `BuffSheep` 프리팹으로 바꾸고 `sheep_arrive` 반짝임과 커지는 팝(`EntityView.PlayPop`)을 보인다. 생강꽃이 사라질 때는 이펙트를 내지 않는다.
+- 쓰러진 늑대는 판 재생 중에는 그대로 세워 두고, 재생이 끝나면 `EndingCutscene`이 이어받는다. 늑대가 양의 어느 쪽에 설지는 늑대가 들어온 쪽(없으면 양이 가던 쪽)이다.
+- `EndingCutscene`: 양·늑대·이펙트를 프리팹 대역으로 찍고 Animator를 끈 뒤 `SpriteCatalog`의 프레임과 길이로 직접 넘긴다. 검은 막·흰 막은 판보다 위(정렬 3000번대)의 단색 스프라이트이고, UI(Screen Space Overlay)는 `CanvasGroup` 알파로 숨긴다. 하얗게 덮인 동안 판과 카메라(`FitCamera`)를 되돌리고 결과 창을 띄운 뒤 막을 걷는다.
+- 판 재생을 빨리 감아도 컷씬은 나온다. 컷씬은 `endingSkipDelaySeconds`가 지난 뒤 클릭·키로 건너뛴다. undo·재시작·메뉴·스테이지 바꾸기는 `EndingCutscene.Abort`로 모두 되돌린다.
+- 별은 `KnockoutAt`이 있으면 턴과 상관없이 3개다. 컷씬의 조정값은 `GameSettings`의 "근육질 양이 되는 순간", "엔딩 컷씬". 컷씬 전체 빠르기는 `endingTimeScale`(모든 시간과 프레임 길이에 곱하는 배율)로 한 번에 바꾼다.

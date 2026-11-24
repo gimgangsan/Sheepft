@@ -422,6 +422,7 @@ namespace Sheepft.Core
                 case 'A': return new FruitBasket();
                 case 'B': return new Bucket();
                 case 'U': return new Bucket { Filled = true };
+                case 'P': return new Spicebush();
                 default: return null;
             }
         }

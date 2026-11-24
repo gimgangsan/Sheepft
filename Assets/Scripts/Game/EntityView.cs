@@ -61,7 +61,9 @@ namespace Sheepft.Game
 
         public static string SheetName(ObjectEntity o)
         {
-            if (o is Sheep) return "sheep";
+            var sheep = o as Sheep;
+            if (sheep != null) return sheep.Buff ? "buff_sheep" : "sheep";
+            if (o is Spicebush) return "spicebush";
             if (o is Wolf) return "wolf";
             if (o is Goat) return "goat";
             if (o is Horse) return "horse";
@@ -80,6 +82,67 @@ namespace Sheepft.Game
             if (body == null) body = GetComponentInChildren<SpriteRenderer>();
             PlaceIcon();
             CopyState(o);
+        }
+
+        /// <summary>
+        /// 같은 오브젝트가 다른 그림(프리팹)으로 바뀔 때, 예전 모습의 화면 상태를 그대로 넘겨받는다.
+        /// 양이 생강꽃을 먹고 근육질 양이 되는 순간에 쓴다.
+        /// </summary>
+        public void SetupFrom(SpriteCatalog spriteCatalog, EntityView old, string sheet)
+        {
+            catalog = spriteCatalog;
+            Id = old.Id;
+            Sheet = sheet;
+            if (body == null) body = GetComponentInChildren<SpriteRenderer>();
+            Pos = old.Pos;
+            LayoutOffset = old.LayoutOffset;
+            Wet = old.Wet;
+            Burned = old.Burned;
+            Filled = old.Filled;
+            Stunned = old.Stunned;
+            Eating = old.Eating;
+            HasTarget = old.HasTarget;
+            Full = old.Full;
+            Count = old.Count;
+            RiderId = old.RiderId;
+            SetFlip(old.FacesLeft);
+            Place(old.BasePosition);
+            RefreshVisuals();
+        }
+
+        /// <summary>
+        /// 작게 시작해 살짝 넘치게 커졌다가 제 크기로 돌아온다. 근육질 양이 되는 순간에 쓴다.
+        /// 뿌리(발밑)를 축으로 커진다.
+        /// </summary>
+        public void PlayPop(float startScale, float overshoot, float seconds)
+        {
+            if (pop != null) StopCoroutine(pop);
+            pop = StartCoroutine(Pop(startScale, overshoot, Mathf.Max(0.01f, seconds)));
+        }
+
+        private Coroutine pop;
+
+        private System.Collections.IEnumerator Pop(float startScale, float overshoot, float seconds)
+        {
+            float peakAt = seconds * 0.6f;
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                float s = t < peakAt
+                    ? Mathf.Lerp(startScale, overshoot, Mathf.SmoothStep(0f, 1f, t / peakAt))
+                    : Mathf.Lerp(overshoot, 1f, Mathf.SmoothStep(0f, 1f, (t - peakAt) / (seconds - peakAt)));
+                transform.localScale = new Vector3(s, s, 1f);
+                yield return null;
+            }
+            transform.localScale = Vector3.one;
+            pop = null;
+        }
+
+        private void OnDisable()
+        {
+            // 꺼지면 코루틴이 멈춘다. 커지던 도중이면 제 크기로 돌려 둔다(엔딩 컷씬이 양을 잠시 숨길 때).
+            if (pop == null) return;
+            pop = null;
+            transform.localScale = Vector3.one;
         }
 
         /// <summary>로직의 상태를 그대로 옮긴다. undo, 재시작, 재생이 끝난 뒤에 쓴다.</summary>

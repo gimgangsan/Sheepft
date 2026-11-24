@@ -60,6 +60,13 @@ namespace Sheepft.Game
 
         private MenuController menu;
 
+        /// <summary>근육질 양이 늑대를 쓰러뜨리면 판 재생이 끝난 뒤 나오는 연출.</summary>
+        private EndingCutscene ending;
+        /// <summary>둔 수로 늑대가 쓰러졌고 엔딩 컷씬을 아직 보여 주지 않았다. 재생을 빨리 감아도 컷씬은 나온다.</summary>
+        private bool endingPending;
+        /// <summary>엔딩에서 늑대가 양의 어느 쪽에 서는가. 1 오른쪽, -1 왼쪽.</summary>
+        private int endingSide = 1;
+
         private Board Board => session.Board;
 
         // ── 시작 ──
@@ -106,6 +113,9 @@ namespace Sheepft.Game
             var font = ui != null && ui.titleText != null ? ui.titleText.font : null;
             menu.Init(catalog, prefabs, cam, font, stageCount);
             menu.StageChosen += LoadStage;
+
+            ending = NewChild("ending").gameObject.AddComponent<EndingCutscene>();
+            ending.Init(catalog, prefabs, cam, ui, FitCamera);
 
 #if UNITY_EDITOR
             // 스테이지 에디터의 ▶ Play: 메뉴를 건너뛰고 그 스테이지를 연다. 넘겨받은 값은 한 번만 쓴다.
@@ -270,10 +280,11 @@ namespace Sheepft.Game
             }
 
             // 재생 중에는 입력을 막는다. 클릭하거나 키를 누르면 끝까지 빨리 감는다.
+            // 엔딩 컷씬은 시작하고 조금 지나야 건너뛸 수 있다.
             if (playback != null)
             {
                 bool anyKey = keyboard != null && keyboard.anyKey.wasPressedThisFrame;
-                if (click || anyKey) FinishPlayback();
+                if ((click || anyKey) && (ending == null || ending.CanSkip)) FinishPlayback();
                 return;
             }
 
@@ -324,6 +335,8 @@ namespace Sheepft.Game
             if ((Board.Mechanics & Mechanic.Blocked) != 0) SoundManager.Play(Sound.Impact);
             cannotWinBeforeMove = cannotWinBefore;
             resultSoundPending = true;
+            endingPending = Board.Result == GameResult.Won && Board.KnockoutAt != null;
+            if (endingPending) endingSide = EndingSide(Board.Events, move);
             if (Board.Result == GameResult.Won) SaveData.RecordClear(stageIndex, Stars(), stageCount);
             boardView.ShowLine(null);
             HideArrows();
@@ -362,8 +375,9 @@ namespace Sheepft.Game
         private void OpenMenuFromGame()
         {
             SoundManager.Play(Sound.Click);
-            // 재생 중에 나가면 그 수의 승패 소리는 내지 않는다.
+            // 재생 중에 나가면 그 수의 승패 소리와 엔딩 컷씬은 내지 않는다.
             resultSoundPending = false;
+            endingPending = false;
             if (playback != null) FinishPlayback();
             OpenMenu(MenuScreen.StageSelect, stageIndex);
         }
@@ -408,10 +422,95 @@ namespace Sheepft.Game
             }
             if (step.Count > 0) yield return PlayStep(step, move);
 
-            playback = null;
             boardView.SyncAll(Board);
+            if (endingPending)
+            {
+                yield return PlayEnding();
+                yield break;
+            }
+            playback = null;
             RefreshUi();
             PlayResultSound();
+        }
+
+        /// <summary>
+        /// 엔딩 컷씬. 판 재생이 끝나 화면이 로직과 같아진 뒤에 부른다. 하얗게 덮인 동안 결과 창(별 3개)을 띄운다.
+        /// </summary>
+        private IEnumerator PlayEnding()
+        {
+            endingPending = false;
+            boardView.ShowLine(null);
+            HideArrows();
+            var at = Board.KnockoutAt;
+            EntityView sheep = null;
+            if (at != null)
+            {
+                foreach (var o in Board.At(at.Value).Objects)
+                {
+                    var s = o as Sheep;
+                    if (s != null && s.Buff) { sheep = boardView.View(s.Id); break; }
+                }
+            }
+            if (sheep == null)
+            {
+                // 그 사이 양이 다른 칸으로 밀려났으면 아무 근육질 양이나 쓴다.
+                foreach (var o in Board.Objects)
+                {
+                    var s = o as Sheep;
+                    if (s != null && s.Buff) { sheep = boardView.View(s.Id); break; }
+                }
+            }
+
+            yield return ending.Play(sheep, endingSide, () =>
+            {
+                boardView.SyncAll(Board);
+                RefreshUi();
+                PlayResultSound();
+            });
+            playback = null;
+        }
+
+        /// <summary>
+        /// 엔딩에서 늑대가 양의 어느 쪽에 서는가(1 오른쪽, -1 왼쪽). 늑대가 들어온 쪽이고,
+        /// 늑대가 가만히 있었으면 양이 가던 쪽이다. 둘 다 모르면(위아래로 겹침) 양이 보던 쪽.
+        /// </summary>
+        private int EndingSide(List<GameEvent> events, ShiftPoint move)
+        {
+            var at = Board.KnockoutAt.Value;
+            int wolfId = -1;
+            foreach (var e in events)
+            {
+                var removed = e as RemovedEvent;
+                if (removed != null && removed.Cause == RemoveCause.KnockedOut) { wolfId = removed.Id; break; }
+            }
+
+            MovedEvent wolfMove = null, sheepMove = null;
+            foreach (var e in events)
+            {
+                var moved = e as MovedEvent;
+                if (moved == null || moved.To != at) continue;
+                if (moved.Id == wolfId) wolfMove = moved;
+                var sheep = Board.Find(moved.Id) as Sheep;
+                if (sheep != null && sheep.Buff) sheepMove = moved;
+            }
+
+            int d = wolfMove != null ? HorizontalStep(wolfMove, move) : 0;
+            if (d != 0) return -d;
+            d = sheepMove != null ? HorizontalStep(sheepMove, move) : 0;
+            if (d != 0) return d;
+            foreach (var o in Board.At(at).Objects)
+            {
+                var view = boardView.View(o.Id);
+                if (o is Sheep && view != null) return view.FacesLeft ? -1 : 1;
+            }
+            return 1;
+        }
+
+        /// <summary>그 이동이 오른쪽이면 1, 왼쪽이면 -1, 위아래면 0. 순환한 shift는 미는 방향으로 본다.</summary>
+        private static int HorizontalStep(MovedEvent m, ShiftPoint move)
+        {
+            if (m.Cause == MoveCause.Shift) return move.Axis == Axis.Row ? (move.Dir == Dir.Right ? 1 : -1) : 0;
+            return m.To.Col > m.From.Col ? 1 : m.To.Col < m.From.Col ? -1 : 0;
         }
 
         private IEnumerator PlayStep(List<GameEvent> step, ShiftPoint move)
@@ -481,6 +580,18 @@ namespace Sheepft.Game
                 if (status != null)
                 {
                     var view = boardView.View(status.Id);
+                    // 생강꽃을 먹은 양: 근육질 양 프리팹으로 바꾸고, 반짝이며 작은 크기에서 커진다.
+                    if (view != null && status.Status == StatusKind.Buff && status.On)
+                    {
+                        var buff = boardView.SwapSheet(status.Id, "buff_sheep");
+                        if (buff != null)
+                        {
+                            view = buff;
+                            var s = Settings;
+                            view.PlayPop(s.buffPopStartScale, s.buffPopOvershoot, s.buffPopSeconds);
+                        }
+                        boardView.SpawnEffect("sheep_arrive", view.Pos);
+                    }
                     if (view != null)
                     {
                         // 양동이는 물이 차고 비는 것만 본다(같은 단계에 젖음도 함께 바뀌므로 두 번 나오지 않게).
@@ -535,6 +646,12 @@ namespace Sheepft.Game
                     other = true;
                 }
                 var removed = e as RemovedEvent;
+                // 근육질 양에게 쓰러진 늑대는 그대로 세워 둔다. 판 재생이 끝나면 엔딩 컷씬이 이어받는다.
+                if (removed != null && removed.Cause == RemoveCause.KnockedOut)
+                {
+                    other = true;
+                    continue;
+                }
                 if (removed != null)
                 {
                     var view = boardView.View(removed.Id);
@@ -641,6 +758,8 @@ namespace Sheepft.Game
 
         private static string RemoveEffect(EntityView view, RemoveCause cause)
         {
+            // 생강꽃을 먹으면 양이 변하는 반짝임만 보인다(상태 바뀜 쪽에서 낸다).
+            if (view.Sheet == "spicebush" && cause == RemoveCause.Eaten) return null;
             switch (cause)
             {
                 case RemoveCause.Eaten: return view.Sheet == "sheep" ? "sheep_eaten" : "eat_crumbs";
@@ -760,16 +879,30 @@ namespace Sheepft.Game
             }
         }
 
+        /// <summary>
+        /// 재생을 끝까지 빨리 감는다. 엔딩 컷씬이 남아 있으면 판만 맞춘 뒤 컷씬을 틀고,
+        /// 컷씬 도중이면 컷씬을 건너뛴다.
+        /// </summary>
         private void FinishPlayback()
         {
+            bool startEnding = endingPending;
             StopPlayback();
             boardView.SyncAll(Board);
+            if (startEnding)
+            {
+                endingPending = true;
+                playback = StartCoroutine(PlayEnding());
+                return;
+            }
             RefreshUi();
             PlayResultSound();
         }
 
+        /// <summary>재생과 엔딩 컷씬을 멈춘다. 컷씬이 바꾼 화면(카메라, UI, 숨긴 양)은 되돌린다.</summary>
         private void StopPlayback()
         {
+            endingPending = false;
+            if (ending != null) ending.Abort();
             if (playback == null) return;
             StopCoroutine(playback);
             playback = null;
@@ -788,9 +921,13 @@ namespace Sheepft.Game
             HideArrows();
         }
 
-        /// <summary>쓴 턴 수로 정하는 별 수. 별 1개는 제한 턴 이내다. 구현 계획 2절.</summary>
+        /// <summary>
+        /// 쓴 턴 수로 정하는 별 수. 별 1개는 제한 턴 이내다. 구현 계획 2절.
+        /// 근육질 양이 늑대를 쓰러뜨린 엔딩 클리어는 턴과 상관없이 늘 3개다.
+        /// </summary>
         private int Stars()
         {
+            if (Board.KnockoutAt != null) return 3;
             var rules = Board.Rules;
             if (Board.TurnsUsed <= rules.Star3Turns) return 3;
             if (Board.TurnsUsed <= rules.Star2Turns) return 2;

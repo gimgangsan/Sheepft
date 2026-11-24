@@ -91,14 +91,17 @@ namespace Sheepft.Core
             throw new InvalidOperationException("정리 절차가 " + MaxRounds + "바퀴 안에 끝나지 않았다.");
         }
 
-        /// <summary>OnOverlap을 쓰는 오브젝트가 칸에 있는가. 늑대(합류), 말(태우기, 목표 상실), 소(먹기, 목표 상실).</summary>
+        /// <summary>
+        /// OnOverlap을 쓰는 오브젝트가 칸에 있는가.
+        /// 늑대(쓰러짐, 합류), 말(태우기, 목표 상실), 소(먹기, 목표 상실), 생강꽃(양이 먹음).
+        /// </summary>
         private static bool HasOverlapActor(Tile tile)
         {
             var objects = tile.Objects;
             for (int i = 0; i < objects.Count; i++)
             {
                 var o = objects[i];
-                if (o is Wolf || o is Horse || o is Cow) return true;
+                if (o is Wolf || o is Horse || o is Cow || o is Spicebush) return true;
             }
             return false;
         }

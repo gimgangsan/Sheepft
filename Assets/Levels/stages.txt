@@ -292,3 +292,7 @@ t   #  .H  #  #    #   t
 .   #  #  ~   #   .   #   #
 .S  .  .  ^   .   .   .W  #
 #   #  #  #   #   g   .A  #
+
+# New Stage  shift: R0:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:UD, C7:UD, C8:UD, C9:UD, C10:UD  제한 10턴  목표 양 1
+@intent SheepBuff WolfKnockout
+.P  .  .  .  .S  .  .  .  .  .W  #

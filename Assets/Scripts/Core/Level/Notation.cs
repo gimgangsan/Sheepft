@@ -51,6 +51,7 @@ namespace Sheepft.Core
                 case Cow _: return 'M';
                 case FruitBasket _: return 'A';
                 case Bucket bucket: return bucket.Filled ? 'U' : 'B';
+                case Spicebush _: return 'P';
                 default: throw new ArgumentException("표기법에 없는 오브젝트: " + o.GetType().Name, nameof(o));
             }
         }

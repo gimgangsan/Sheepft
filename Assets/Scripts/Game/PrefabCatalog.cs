@@ -18,13 +18,13 @@ namespace Sheepft.Game
     /// </summary>
     public sealed class PrefabCatalog : MonoBehaviour
     {
-        [Tooltip("오브젝트: sheep, wolf, goat, horse, cow, fruit_basket, wooden_bucket")]
+        [Tooltip("오브젝트: sheep, wolf, goat, horse, cow, fruit_basket, wooden_bucket, spicebush, buff_sheep")]
         public List<NamedPrefab> entities = new List<NamedPrefab>();
 
         [Tooltip("지형: ground, stone, fence, tree, water, wild_fire, grass, ash")]
         public List<NamedPrefab> terrain = new List<NamedPrefab>();
 
-        [Tooltip("이펙트: splash, steam, ignite, smoke, goat_shockwave, cow_impact, wolf_merge_dust, sheep_eaten, sheep_arrive, eat_crumbs")]
+        [Tooltip("이펙트: splash, steam, ignite, smoke, goat_shockwave, cow_impact, wolf_merge_dust, sheep_eaten, sheep_arrive, eat_crumbs, power_charge, uppercut_impact")]
         public List<NamedPrefab> effects = new List<NamedPrefab>();
 
         [Tooltip("shift 포인트 화살표. 오른쪽을 가리키는 그림을 돌려서 쓴다.")]

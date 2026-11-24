@@ -14,9 +14,12 @@ namespace Sheepft.Tools
     /// </summary>
     public static class BoardCodec
     {
-        private const byte KindSheep = 0, KindWolf = 1, KindGoat = 2, KindHorse = 3, KindCow = 4, KindBasket = 5, KindBucket = 6;
+        private const byte KindSheep = 0, KindWolf = 1, KindGoat = 2, KindHorse = 3, KindCow = 4, KindBasket = 5, KindBucket = 6, KindSpicebush = 7;
 
         private const byte FlagWet = 1, FlagBurned = 2, FlagFilled = 4, FlagFull = 8, FlagCarried = 16, FlagHasDir = 32;
+
+        /// <summary>양의 근육질. 양동이의 FlagFilled와 같은 비트지만 종류가 달라 겹치지 않는다(8비트를 이미 다 쓴다).</summary>
+        private const byte FlagBuff = FlagFilled;
 
         [ThreadStatic] private static byte[] buffer;
 
@@ -58,6 +61,8 @@ namespace Sheepft.Tools
                         }
                         var bucket = o as Bucket;
                         if (bucket != null && bucket.Filled) flags |= FlagFilled;
+                        var sheep = o as Sheep;
+                        if (sheep != null && sheep.Buff) flags |= FlagBuff;
                         var seeker = o as BasketSeeker;
                         if (seeker != null && seeker.Full) flags |= FlagFull;
                         var basket = o as FruitBasket;
@@ -112,7 +117,8 @@ namespace Sheepft.Tools
                 ObjectEntity o;
                 switch (kind)
                 {
-                    case KindSheep: o = new Sheep(); break;
+                    case KindSheep: o = new Sheep { Buff = (flags & FlagBuff) != 0 }; break;
+                    case KindSpicebush: o = new Spicebush(); break;
                     case KindWolf:
                         o = new Wolf { Count = data[n++], StunLeft = data[n++], MealLeft = data[n++] };
                         break;
@@ -147,6 +153,7 @@ namespace Sheepft.Tools
             work.TurnsUsed = 0;
             work.Result = GameResult.InProgress;
             work.TurnEnding = false;
+            work.KnockoutAt = null;
             work.Events.Clear();
             work.Mechanics = Mechanic.None;
         }
@@ -162,6 +169,7 @@ namespace Sheepft.Tools
                 case Cow _: return KindCow;
                 case FruitBasket _: return KindBasket;
                 case Bucket _: return KindBucket;
+                case Spicebush _: return KindSpicebush;
                 default: throw new ArgumentException("인코딩할 수 없는 오브젝트: " + o.GetType().Name);
             }
         }

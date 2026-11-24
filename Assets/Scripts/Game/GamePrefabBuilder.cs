@@ -30,13 +30,31 @@ namespace Sheepft.Game
         private const string TmpFolder = "Assets/TextMesh Pro";
         private const float Pixel = 1f / 32f;
 
-        private static readonly string[] EntityNames = { "sheep", "wolf", "goat", "horse", "cow", "fruit_basket", "wooden_bucket" };
+        private static readonly string[] EntityNames =
+        {
+            "sheep", "wolf", "goat", "horse", "cow", "fruit_basket", "wooden_bucket",
+            "spicebush", "buff_sheep",
+        };
         private static readonly string[] TerrainNames = { "ground", "stone", "fence", "tree", "water", "wild_fire", "grass", "ash" };
         private static readonly string[] EffectNames =
         {
             "splash", "steam", "ignite", "smoke", "goat_shockwave", "cow_impact",
             "wolf_merge_dust", "sheep_eaten", "sheep_arrive", "eat_crumbs",
+            "power_charge", "uppercut_impact",
         };
+
+        /// <summary>상태 아이콘의 높이(픽셀, 칸 바닥에서). 근육질 양(80×80)은 머리가 높다.</summary>
+        private static float StatusHeight(string name) => name == "buff_sheep" ? 78f : 26f;
+
+        /// <summary>
+        /// 이펙트 그림의 중심이 캔버스 아래쪽 가운데(피벗)에서 얼마나 위에 있는가(픽셀).
+        /// 뿌리가 그림 중심에 오게 그림을 이만큼 내려 둔다. 32×32는 가운데(16)다.
+        /// uppercut_impact(64×64)는 그림 중심이 (32, 34)라서 30이다(SPRITES.md 7절).
+        /// </summary>
+        private static float EffectCenterHeight(string name) => name == "uppercut_impact" ? 30f : 16f;
+
+        /// <summary>반복 재생하는 이펙트. 스스로 사라지지 않으므로 OneShotEffect를 붙이지 않고, 쓰는 쪽이 지운다.</summary>
+        private static bool IsLoopEffect(string name) => name == "power_charge";
 
         private static readonly Color TextColor = new Color32(0xf4, 0xf0, 0xe8, 0xff);
         private static readonly Color PanelColor = new Color32(0x2b, 0x24, 0x33, 0xf2);
@@ -83,7 +101,7 @@ namespace Sheepft.Game
 
             var status = new GameObject("Status");
             status.transform.SetParent(root.transform, false);
-            status.transform.localPosition = new Vector3(0f, 26f * Pixel, 0f);
+            status.transform.localPosition = new Vector3(0f, StatusHeight(name) * Pixel, 0f);
             view.icon = status.AddComponent<SpriteRenderer>();
             view.icon.enabled = false;
             view.iconAnimator = AddAnimator(status, "status_icons");
@@ -102,16 +120,20 @@ namespace Sheepft.Game
             return root;
         }
 
-        /// <summary>이펙트: 뿌리는 칸 가운데에 놓이고 돌아간다. 그림은 피벗(아래쪽 가운데)만큼 내려 둔다.</summary>
+        /// <summary>
+        /// 이펙트: 뿌리는 칸 가운데(엔딩 이펙트는 주먹)에 놓이고 돌아간다. 그림은 피벗(아래쪽 가운데)에서
+        /// 그림 중심까지만큼 내려 둔다. 반복 이펙트에는 OneShotEffect를 붙이지 않는다.
+        /// </summary>
         private static GameObject NewEffect(string name)
         {
             var root = new GameObject(Pascal(name));
-            var effect = root.AddComponent<OneShotEffect>();
+            var effect = IsLoopEffect(name) ? null : root.AddComponent<OneShotEffect>();
             var sprite = new GameObject("Sprite");
             sprite.transform.SetParent(root.transform, false);
-            sprite.transform.localPosition = new Vector3(0f, -0.5f, 0f);
+            sprite.transform.localPosition = new Vector3(0f, -EffectCenterHeight(name) * Pixel, 0f);
             sprite.AddComponent<SpriteRenderer>().sprite = FirstSprite(name);
-            effect.animator = AddAnimator(sprite, name);
+            var animator = AddAnimator(sprite, name);
+            if (effect != null) effect.animator = animator;
             return root;
         }
 

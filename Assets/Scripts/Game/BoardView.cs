@@ -104,7 +104,13 @@ namespace Sheepft.Game
             {
                 alive.Add(o.Id);
                 EntityView view;
-                if (!views.TryGetValue(o.Id, out view))
+                // 그림이 바뀐 오브젝트(근육질 양이 됨, undo로 되돌아감)는 새 프리팹으로 다시 만든다.
+                if (views.TryGetValue(o.Id, out view) && view.Sheet != EntityView.SheetName(o))
+                {
+                    RemoveView(o.Id);
+                    view = null;
+                }
+                if (view == null)
                 {
                     var prefab = prefabs.Entity(EntityView.SheetName(o));
                     if (prefab == null) continue;
@@ -143,6 +149,28 @@ namespace Sheepft.Game
             if (!views.TryGetValue(id, out view)) return;
             views.Remove(id);
             Remove(view.gameObject);
+        }
+
+        /// <summary>
+        /// 오브젝트의 그림을 다른 프리팹으로 바꾼다. 자리와 상태 표시는 그대로 넘긴다.
+        /// 그 프리팹이 없으면 바꾸지 않고 null을 돌려준다.
+        /// </summary>
+        public EntityView SwapSheet(int id, string sheet)
+        {
+            EntityView old;
+            if (!views.TryGetValue(id, out old) || old.Sheet == sheet) return old;
+            var prefab = prefabs.Entity(sheet);
+            if (prefab == null) return null;
+
+            var go = Instantiate(prefab, entityRoot);
+            go.name = old.gameObject.name + " (" + sheet + ")";
+            var view = go.GetComponent<EntityView>();
+            if (view == null) view = go.AddComponent<EntityView>();
+            view.SetupFrom(catalog, old, sheet);
+            views[id] = view;
+            Remove(old.gameObject);
+            Layout();
+            return view;
         }
 
         public void SetTerrain(Pos p, TerrainType type)
