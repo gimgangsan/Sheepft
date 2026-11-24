@@ -145,6 +145,13 @@ namespace Sheepft.Game
         [Tooltip("컷씬이 시작된 뒤 이 시간이 지나야 클릭이나 키로 건너뛸 수 있다(초).")]
         [Min(0f)] public float endingSkipDelaySeconds = 0.5f;
 
+        [Header("구름 화면 전환 (transition_cloud)")]
+        [Tooltip("다 덮인 뒤 걷어 내기 전까지 기다리는 시간(초).")]
+        [Min(0f)] public float transitionHoldSeconds = 0.1f;
+
+        [Tooltip("프레임 길이(.aseprite에 적힌 값)에 곱하는 배수. 1이면 그대로, 0.5면 두 배 빠르게.")]
+        [Min(0.1f)] public float transitionFrameScale = 1f;
+
         [Header("도착 칸 표시 (shift 화살표에 마우스를 올렸을 때)")]
         [Tooltip("동물 그림의 크기(원래 크기의 배수).")]
         [Min(0.1f)] public float arrivalIconScale = 0.5f;

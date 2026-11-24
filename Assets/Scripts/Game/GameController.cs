@@ -59,6 +59,8 @@ namespace Sheepft.Game
         private float aspect;
 
         private MenuController menu;
+        /// <summary>구름 화면 전환: 메뉴에서 스테이지로, 다음 스테이지, 재시작, 스테이지에서 메뉴로.</summary>
+        private ScreenTransition transition;
 
         /// <summary>근육질 양이 늑대를 쓰러뜨리면 판 재생이 끝난 뒤 나오는 연출.</summary>
         private EndingCutscene ending;
@@ -87,6 +89,8 @@ namespace Sheepft.Game
             arrowRoot = NewChild("arrows");
             arrivals = NewChild("arrivals").gameObject.AddComponent<ArrivalMarkers>();
             arrivals.Init(catalog);
+            transition = NewChild("transition").gameObject.AddComponent<ScreenTransition>();
+            transition.Init(catalog);
             SoundManager.Init(Settings.sounds);
 
             if (ui == null) ui = FindFirstObjectByType<GameUI>();
@@ -112,7 +116,8 @@ namespace Sheepft.Game
             menu = NewChild("menu").gameObject.AddComponent<MenuController>();
             var font = ui != null && ui.titleText != null ? ui.titleText.font : null;
             menu.Init(catalog, prefabs, cam, font, stageCount);
-            menu.StageChosen += LoadStage;
+            // 메뉴에서 스테이지에 들어갈 때는 구름으로 덮었다가 걷어 낸다.
+            menu.StageChosen += index => transition.Play(() => LoadStage(index));
 
             ending = NewChild("ending").gameObject.AddComponent<EndingCutscene>();
             ending.Init(catalog, prefabs, cam, ui, FitCamera);
@@ -245,6 +250,8 @@ namespace Sheepft.Game
 
         private void Update()
         {
+            // 화면 전환 중에는 입력을 받지 않는다.
+            if (ScreenTransition.Active) return;
             // 메뉴가 열려 있으면 메뉴가 입력을 받는다.
             if (menu != null && menu.IsOpen) return;
             if (session == null) return;
@@ -353,20 +360,36 @@ namespace Sheepft.Game
             RefreshUi();
         }
 
+        /// <summary>재시작. 재생을 멈추고 구름으로 덮은 동안 처음 상태로 되돌린다.</summary>
         private void Restart()
         {
+            if (ScreenTransition.Active) return;
             StopPlayback();
-            session.Restart();
             SoundManager.Play(Sound.Click);
-            boardView.SyncAll(Board);
-            RefreshUi();
+            BeforeTransition();
+            transition.Play(() =>
+            {
+                session.Restart();
+                boardView.SyncAll(Board);
+                RefreshUi();
+            });
         }
 
         private void NextStage()
         {
-            if (stageIndex >= stageCount - 1) return;
+            if (ScreenTransition.Active || stageIndex >= stageCount - 1) return;
             SoundManager.Play(Sound.Click);
-            LoadStage(stageIndex + 1);
+            BeforeTransition();
+            int next = stageIndex + 1;
+            transition.Play(() => LoadStage(next));
+        }
+
+        /// <summary>전환이 시작되면 마우스를 올린 줄 표시, 화살표, 도착 칸 표시가 구름 밑에 남지 않게 지운다.</summary>
+        private void BeforeTransition()
+        {
+            if (boardView != null) boardView.ShowLine(null);
+            HideArrows();
+            if (ui != null) ui.CloseLevelSelect();
         }
 
         // ── 메뉴 ──
@@ -374,12 +397,14 @@ namespace Sheepft.Game
         /// <summary>게임 중 Esc나 레벨 선택 버튼: 메뉴의 스테이지 선택 화면, 양은 하던 스테이지 줄.</summary>
         private void OpenMenuFromGame()
         {
+            if (ScreenTransition.Active) return;
             SoundManager.Play(Sound.Click);
             // 재생 중에 나가면 그 수의 승패 소리와 엔딩 컷씬은 내지 않는다.
             resultSoundPending = false;
             endingPending = false;
             if (playback != null) FinishPlayback();
-            OpenMenu(MenuScreen.StageSelect, stageIndex);
+            BeforeTransition();
+            transition.Play(() => OpenMenu(MenuScreen.StageSelect, stageIndex));
         }
 
         private void OpenMenu(MenuScreen screen, int stage)

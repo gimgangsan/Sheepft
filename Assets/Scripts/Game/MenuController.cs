@@ -274,7 +274,8 @@ namespace Sheepft.Game
 
         private void Update()
         {
-            if (!IsOpen || busy || cam == null) return;
+            // 구름 화면 전환 중(스테이지로 들어가거나 메뉴로 돌아오는 중)에는 입력을 받지 않는다.
+            if (!IsOpen || busy || cam == null || ScreenTransition.Active) return;
             var mouse = Mouse.current;
             if (mouse == null) return;
 
