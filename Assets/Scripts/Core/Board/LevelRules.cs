@@ -37,5 +37,17 @@ namespace Sheepft.Core
 
         /// <summary>헤더 바로 위의 `//` 줄(`//`까지 그대로). 스테이지 에디터가 파일을 다시 쓸 때 지킨다.</summary>
         public IReadOnlyList<string> Comments = Array.Empty<string>();
+
+        /// <summary>
+        /// 턴 표시의 오른쪽 수 `남은 턴/이 수`. 아직 받을 수 있는 가장 높은 별의 기준을 남은 턴으로 바꾼 값이다.
+        /// 남은 턴이 별 3개 기준(제한 − Star3Turns) 이하가 되면 다음 수로는 별 3개를 못 받으므로 별 2개 기준을,
+        /// 그것도 지나면 별 1개 기준인 0을 보여 준다. `@stars`가 없으면(0) 그 단계는 건너뛴다.
+        /// </summary>
+        public int StarTargetTurnsLeft(int turnsLeft)
+        {
+            if (Star3Turns > 0 && turnsLeft > TurnLimit - Star3Turns) return TurnLimit - Star3Turns;
+            if (Star2Turns > 0 && turnsLeft > TurnLimit - Star2Turns) return TurnLimit - Star2Turns;
+            return 0;
+        }
     }
 }

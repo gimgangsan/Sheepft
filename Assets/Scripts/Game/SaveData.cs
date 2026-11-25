@@ -83,6 +83,13 @@ namespace Sheepft.Game
             Write();
         }
 
+        /// <summary>스테이지를 건너뛰었다. 별은 그대로 두고 다음 스테이지만 연다.</summary>
+        public static void RecordSkip(int stage, int stageCount)
+        {
+            File.RecordSkip(stage, stageCount);
+            Write();
+        }
+
         // ── 설정 ──
 
         /// <summary>음악 크기 0–5. 기본 3.</summary>

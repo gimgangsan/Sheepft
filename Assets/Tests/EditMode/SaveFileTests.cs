@@ -20,6 +20,19 @@ namespace Sheepft.Tests
         }
 
         [Test]
+        public void RecordSkip_OpensNextStage_WithoutStars()
+        {
+            var file = new SaveFile();
+            file.RecordSkip(0, 30);
+            Assert.AreEqual(2, file.unlocked);
+            Assert.AreEqual(0, file.Stars(0));
+            // 이미 더 많이 열려 있으면 줄이지 않는다.
+            file.unlocked = 10;
+            file.RecordSkip(2, 30);
+            Assert.AreEqual(10, file.unlocked);
+        }
+
+        [Test]
         public void RecordClear_KeepsBestStars_AndOpensNextStage()
         {
             var file = new SaveFile();

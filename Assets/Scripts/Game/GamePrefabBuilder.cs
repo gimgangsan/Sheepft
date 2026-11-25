@@ -188,7 +188,11 @@ namespace Sheepft.Game
         private static GameObject BuildUi(string rootPrefabPath)
         {
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(UiPrefabPath);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                UpgradeUi(existing, rootPrefabPath);
+                return AssetDatabase.LoadAssetAtPath<GameObject>(UiPrefabPath);
+            }
 
             // TMP 필수 리소스(셰이더, 설정)가 있어야 폰트 에셋을 만들 수 있다.
             if (!AssetDatabase.IsValidFolder(TmpFolder))
@@ -295,6 +299,8 @@ namespace Sheepft.Game
             AddStarRow(ui, icons);
             result.gameObject.SetActive(false);
 
+            AddHelpControls(ui, icons, bold);
+
             // 레벨 선택: 화면 전체를 덮는 판. 빈 곳을 누르면 닫힌다.
             var panel = Rect("LevelSelectPanel", root.transform, Vector2.zero, Vector2.one, middle, Vector2.zero, Vector2.zero);
             var panelImage = panel.gameObject.AddComponent<Image>();
@@ -328,6 +334,90 @@ namespace Sheepft.Game
             ui.descriptionText.text = "Stage description.";
             ui.resultText.text = "CLEAR!";
             return root;
+        }
+
+        /// <summary>
+        /// 이미 있는 GameUI.prefab에 나중에 생긴 부분이 없으면 더한다. 있는 것은 건드리지 않는다.
+        /// 지금은 힌트 버튼과 건너뛰기 글자(2026-11-25)뿐이다. 처음 만든 힌트 버튼(Image를 32×32로 늘려 찌그러짐)은
+        /// PixelIconButton을 쓰는 버튼으로 바꾼다.
+        /// </summary>
+        private static void UpgradeUi(GameObject existing, string rootPrefabPath)
+        {
+            var current = existing.GetComponent<GameUI>();
+            if (current == null) return;
+            bool needHint = current.hintButton == null || current.hintButton.GetComponent<PixelIconButton>() == null;
+            bool needSkip = current.skipText == null;
+            if (!needHint && !needSkip) return;
+
+            var sprites = AssetDatabase.LoadAssetAtPath<GameObject>(rootPrefabPath).GetComponent<SpriteCatalog>();
+            var root = PrefabUtility.LoadPrefabContents(UiPrefabPath);
+            try
+            {
+                var ui = root.GetComponent<GameUI>();
+                if (needHint)
+                {
+                    if (ui.hintButton != null) UnityEngine.Object.DestroyImmediate(ui.hintButton.gameObject);
+                    AddHintButton(ui, sprites.Get("hud_icons"));
+                }
+                if (needSkip) AddSkipText(ui, ui.turnsText != null ? ui.turnsText.font : FontAsset("AgravePro-Bold"));
+                PrefabUtility.SaveAsPrefabAsset(root, UiPrefabPath);
+                Debug.Log("[Sheepft] GameUI.prefab에 " + (needHint ? "힌트 버튼 " : "") + (needSkip ? "건너뛰기 글자 " : "") + "를 (다시) 만들었다.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        /// <summary>힌트 버튼과 건너뛰기 글자. 둘 다 꺼 둔다. 구현 계획 13절.</summary>
+        public static void AddHelpControls(GameUI ui, SpriteSheet icons, TMP_FontAsset font)
+        {
+            AddHintButton(ui, icons);
+            AddSkipText(ui, font);
+        }
+
+        /// <summary>
+        /// 힌트 버튼(hud_icons의 `hint`, 마우스를 올리면 `hint_hover`)을 위쪽 줄 Undo 왼쪽에 둔다.
+        /// 칸은 32×32(16×16 프레임의 두 배)이고 가운데가 피벗이다(처음 나타날 때 제자리에서 커진다).
+        /// 그림은 자식 Icon에 PixelIconButton이 고정 픽셀(두 배)로 그린다.
+        /// </summary>
+        public static void AddHintButton(GameUI ui, SpriteSheet icons)
+        {
+            Vector2 right = new Vector2(1f, 0.5f);
+            var top = ui.undoButton != null ? ui.undoButton.transform.parent : ui.transform.Find("TopBar");
+            // Undo(오른쪽 끝에서 44–76px)의 왼쪽 4px 틈. 피벗이 가운데라 칸 가운데 자리를 준다.
+            var hintRect = Rect("HintButton", top, right, right, new Vector2(0.5f, 0.5f), new Vector2(-96f, 0f), new Vector2(32f, 32f));
+            var area = hintRect.gameObject.AddComponent<Image>();
+            area.color = new Color(1f, 1f, 1f, 0f);
+            var button = hintRect.gameObject.AddComponent<Button>();
+            button.targetGraphic = area;
+            button.transition = Selectable.Transition.None;
+
+            var iconRect = Rect("Icon", hintRect, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(32f, 32f));
+            var icon = iconRect.gameObject.AddComponent<Image>();
+            icon.raycastTarget = false;
+            var pixel = hintRect.gameObject.AddComponent<PixelIconButton>();
+            pixel.icon = icon;
+            pixel.pixelScale = 2f;
+            pixel.normalSprite = icons == null ? null : icons.TagFrame("hint");
+            pixel.hoverSprite = icons == null ? null : icons.TagFrame("hint_hover");
+            pixel.Refresh();
+
+            hintRect.gameObject.SetActive(false);
+            ui.hintButton = button;
+        }
+
+        /// <summary>건너뛰기 글자(SKIP)를 아래쪽 줄 Next 버튼 자리에 둔다. 버튼 그림 없이 마우스를 올리면 색이 바뀐다.</summary>
+        public static void AddSkipText(GameUI ui, TMP_FontAsset font)
+        {
+            Vector2 right = new Vector2(1f, 0.5f);
+            var bottom = ui.nextButton != null ? ui.nextButton.transform.parent : ui.transform.Find("BottomBar");
+            var skip = Text("SkipText", bottom, font, 18f, TextAlignmentOptions.Right, right, right, new Vector2(-8f, 0f), new Vector2(48f, 32f));
+            skip.text = "SKIP";
+            skip.raycastTarget = true;
+            ui.skipText = skip.gameObject.AddComponent<HoverText>();
+            ui.skipText.normalColor = TextColor;
+            skip.gameObject.SetActive(false);
         }
 
         /// <summary>

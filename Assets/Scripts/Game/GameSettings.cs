@@ -245,6 +245,28 @@ namespace Sheepft.Game
         [Tooltip("양이 풀에 들어간 뒤 스테이지를 열기까지 기다리는 시간(초).")]
         [Min(0f)] public float menuEnterDelaySeconds = 0.5f;
 
+        [Header("힌트와 건너뛰기 (구현 계획 13절)")]
+        [Tooltip("힌트·건너뛰기가 열리는 실패 횟수. 패배, 또는 턴을 쓰고 재시작하면 1회다. undo만으로는 늘지 않는다.")]
+        [Min(0)] public int hintFailedAttempts = 3;
+
+        [Tooltip("힌트·건너뛰기가 열리기까지 그 스테이지에서 보내야 하는 시간(초). 실패 횟수와 둘 다 채워야 열린다.")]
+        [Min(0f)] public float hintMinSeconds = 180f;
+
+        [Tooltip("재시작을 실패로 세려면 그 전에 쓴 턴이 이만큼은 되어야 한다. 한 수 두고 재시작을 반복해 세지 않게.")]
+        [Min(1)] public int hintRestartMinTurns = 2;
+
+        [Tooltip("힌트를 쓰고 깼을 때 받는 별의 최대 수. 힌트 없이 다시 깨면 그때 별을 제대로 받는다.")]
+        [Range(1, 3)] public int hintMaxStars = 1;
+
+        [Tooltip("힌트 버튼이 처음 나타날 때 커졌다 줄어드는 시간(초).")]
+        [Min(0.01f)] public float hintPopSeconds = 0.5f;
+
+        [Tooltip("힌트 버튼이 처음 나타날 때 가장 커지는 배율.")]
+        [Min(1f)] public float hintPopScale = 1.5f;
+
+        [Tooltip("힌트가 가리키는 shift 화살표가 커졌다 줄어드는 폭(1 = 두 배).")]
+        [Min(0f)] public float hintArrowPulse = 0.2f;
+
         [Header("색")]
         public Color backgroundColor = new Color32(0x2b, 0x24, 0x33, 0xff);
 

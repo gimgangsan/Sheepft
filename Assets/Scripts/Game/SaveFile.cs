@@ -49,6 +49,13 @@ namespace Sheepft.Game
             unlocked = Mathf.Max(unlocked, Mathf.Min(stage + 2, stageCount));
         }
 
+        /// <summary>건너뛰기: 그 스테이지는 깨지 않은 채로(별 0개) 다음 스테이지를 연다.</summary>
+        public void RecordSkip(int stage, int stageCount)
+        {
+            if (stage < 0) return;
+            unlocked = Mathf.Max(unlocked, Mathf.Min(stage + 2, stageCount));
+        }
+
         /// <summary>진행 기록만 처음으로 돌린다. 설정(음악, 효과음, 이동 속도)은 그대로 둔다.</summary>
         public void ResetProgress()
         {

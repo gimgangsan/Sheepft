@@ -627,7 +627,9 @@ MonoBehaviour:
     - {fileID: 8157515611821697221, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
     - {fileID: 3926579576576335896, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
     - {fileID: -1232231788577640769, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
-    durationsMs: 64000000640000006400000064000000
+    - {fileID: -2821160401898686918, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
+    - {fileID: 5826877627622898818, guid: 03b09bed2a765a242a1ba884a23660cc, type: 3}
+    durationsMs: 640000006400000064000000640000006400000064000000
     tags:
     - name: turn
       from: 0
@@ -640,7 +642,13 @@ MonoBehaviour:
       to: 2
     - name: star_empty
       from: 3
-      to: 3
+      to: 5
+    - name: hint
+      from: 4
+      to: 4
+    - name: hint_hover
+      from: 5
+      to: 5
   - name: line_highlight
     frames:
     - {fileID: 7268155889077081627, guid: f0edc75b593931249848fe60a9a4a7c9, type: 3}

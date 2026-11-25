@@ -11,11 +11,15 @@ namespace Sheepft.Core
     {
         private readonly Board initial;
         private readonly Stack<Board> history = new Stack<Board>();
+        private readonly List<ShiftPoint> moves = new List<ShiftPoint>();
 
         /// <summary>지금 맵. undo와 재시작 때 다른 인스턴스로 바뀐다.</summary>
         public Board Board { get; private set; }
 
         public bool CanUndo => history.Count > 0;
+
+        /// <summary>처음 상태부터 지금까지 둔 수. undo하면 줄고 재시작하면 빈다. 힌트가 풀이와 견줄 때 쓴다.</summary>
+        public IReadOnlyList<ShiftPoint> Moves => moves;
 
         public GameSession(Board level)
         {
@@ -30,6 +34,7 @@ namespace Sheepft.Core
             var snapshot = Board.Clone();
             if (!TurnRunner.PlayTurn(Board, move)) return false;
             history.Push(snapshot);
+            moves.Add(move);
             return true;
         }
 
@@ -38,6 +43,7 @@ namespace Sheepft.Core
         {
             if (history.Count == 0) return false;
             Board = history.Pop();
+            moves.RemoveAt(moves.Count - 1);
             return true;
         }
 
@@ -45,6 +51,7 @@ namespace Sheepft.Core
         public void Restart()
         {
             history.Clear();
+            moves.Clear();
             Board = initial.Clone();
         }
     }

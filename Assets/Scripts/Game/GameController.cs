@@ -69,6 +69,12 @@ namespace Sheepft.Game
         /// <summary>엔딩에서 늑대가 양의 어느 쪽에 서는가. 1 오른쪽, -1 왼쪽.</summary>
         private int endingSide = 1;
 
+        /// <summary>스테이지별 힌트 진행. 게임을 켜 둔 동안만 기억한다. 구현 계획 13절.</summary>
+        private readonly Dictionary<int, HintProgress> hints = new Dictionary<int, HintProgress>();
+        private HintProgress hint;
+        /// <summary>힌트가 가리키는 shift 화살표. 없으면 null.</summary>
+        private Arrow hintArrow;
+
         private Board Board => session.Board;
 
         // ── 시작 ──
@@ -102,6 +108,8 @@ namespace Sheepft.Game
                 ui.NextClicked += NextStage;
                 ui.LevelSelectClicked += OpenMenuFromGame;
                 ui.LevelChosen += LoadStage;
+                ui.HintClicked += RequestHint;
+                ui.SkipClicked += SkipStage;
             }
             else
             {
@@ -154,6 +162,12 @@ namespace Sheepft.Game
             SaveData.SetLastStage(index);
             // 맵은 진행하면서 바뀌므로, 스테이지를 열 때마다 파일에서 새로 읽는다.
             session = new GameSession(LevelParser.ParseAll(catalog.stages.text)[index]);
+            if (!hints.TryGetValue(index, out hint))
+            {
+                hint = new HintProgress(Settings.hintFailedAttempts, Settings.hintMinSeconds, Settings.hintRestartMinTurns);
+                hints[index] = hint;
+            }
+            hint.OnEnterStage();
             boardView.Build(catalog, prefabs, Board);
             BuildArrows();
             FitCamera();
@@ -256,6 +270,8 @@ namespace Sheepft.Game
             if (menu != null && menu.IsOpen) return;
             if (session == null) return;
             if (cam != null && !Mathf.Approximately(cam.aspect, aspect)) FitCamera();
+            // 힌트가 열리기까지의 시간. 메뉴와 화면 전환 중에는 세지 않는다. 멈췄다 돌아온 프레임은 1초까지만.
+            if (Board.Result != GameResult.Won && hint.AddTime(Mathf.Min(Time.unscaledDeltaTime, 1f))) OnHintUnlocked();
 
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
@@ -299,6 +315,7 @@ namespace Sheepft.Game
             {
                 if (keyboard.zKey.wasPressedThisFrame || keyboard.uKey.wasPressedThisFrame) { Undo(); return; }
                 if (keyboard.rKey.wasPressedThisFrame) { Restart(); return; }
+                if (keyboard.hKey.wasPressedThisFrame) { RequestHint(); return; }
                 bool next = keyboard.enterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame;
                 if (next && Board.Result == GameResult.Won) { NextStage(); return; }
             }
@@ -318,8 +335,14 @@ namespace Sheepft.Game
                 var d = world - arrow.Center;
                 bool over = playing && !overUi && Mathf.Abs(d.x) <= 0.5f && Mathf.Abs(d.y) <= 0.5f;
                 if (over) hovered = arrow;
-                // 화살표는 마우스를 올린 동안에만 보인다.
-                if (arrow.Renderer != null) arrow.Renderer.enabled = over;
+                // 화살표는 마우스를 올린 동안에만 보인다. 힌트가 가리키는 화살표는 늘 보이고 커졌다 줄어든다.
+                bool hinted = playing && arrow == hintArrow;
+                if (arrow.Renderer != null)
+                {
+                    arrow.Renderer.enabled = over || hinted;
+                    float scale = hinted ? 1f + Settings.hintArrowPulse * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)) : 1f;
+                    arrow.Renderer.transform.localScale = new Vector3(scale, scale, 1f);
+                }
             }
 
             boardView.ShowLine(hovered == null ? null : Board.Line(hovered.Point.Axis, hovered.Point.Index));
@@ -336,8 +359,14 @@ namespace Sheepft.Game
             // 풀 위의 양 수는 재생이 끝난 뒤에 바꾼다. 남은 턴만 바로 줄인다.
             int sheepBefore = Board.SheepOnGrass();
             bool cannotWinBefore = Board.CannotWin;
+            bool followsHint = hintArrow != null && hintArrow.Point == move;
             if (!session.Play(move)) return;
             SoundManager.Play(Sound.Shift);
+            // 힌트는 한 번에 한 수만 알려 준다. 그 수를 두면 끈다. 다른 수를 두면 켜 둔 채로 undo를 알린다.
+            if (followsHint) hint.Done();
+            hintArrow = null;
+            if (ui != null) ui.SetUndoHint(false);
+            if (Board.Result == GameResult.Lost && hint.OnLost()) OnHintUnlocked();
             // 장애물에 막혀 제자리에 남은 오브젝트가 있으면 impact를 냈었다(이 표시는 플레이어의 shift에서만 켜진다).
             // 막힌 칸에 뒤의 오브젝트가 들어와 겹칠 때 나는 소리처럼 들려서 2026-11-25에 잠시 껐다. 다시 쓰면 아래 줄을 살린다.
             // if ((Board.Mechanics & Mechanic.Blocked) != 0) SoundManager.Play(Sound.Impact);
@@ -345,10 +374,15 @@ namespace Sheepft.Game
             resultSoundPending = true;
             endingPending = Board.Result == GameResult.Won && Board.KnockoutAt != null;
             if (endingPending) endingSide = EndingSide(Board.Events, move);
-            if (Board.Result == GameResult.Won) SaveData.RecordClear(stageIndex, Stars(), stageCount);
+            if (Board.Result == GameResult.Won)
+            {
+                SaveData.RecordClear(stageIndex, Stars(), stageCount);
+                // 힌트를 쓴 클리어는 이번만 별을 줄인다. 결과 창은 다음 시도 전까지 줄인 별을 보인다.
+                hint.OnWon();
+            }
             boardView.ShowLine(null);
             HideArrows();
-            if (ui != null) ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, sheepBefore, Board.Rules.TargetSheep, false);
+            if (ui != null) ShowCounts(sheepBefore, false);
             playback = StartCoroutine(PlayEvents(new List<GameEvent>(Board.Events), move));
         }
 
@@ -357,6 +391,7 @@ namespace Sheepft.Game
             StopPlayback();
             if (!session.Undo()) return;
             SoundManager.Play(Sound.Click);
+            if (session.Moves.Count == 0) hint.OnBackToStart();
             boardView.SyncAll(Board);
             RefreshUi();
         }
@@ -370,6 +405,9 @@ namespace Sheepft.Game
             BeforeTransition();
             transition.Play(() =>
             {
+                // 깨지 못한 판을 다시 시작하면 실패한 시도로 센다(턴을 몇 개 이상 썼을 때만).
+                if (Board.Result == GameResult.Won) hint.OnBackToStart();
+                else if (hint.OnRestart(Board.TurnsUsed)) OnHintUnlocked();
                 session.Restart();
                 boardView.SyncAll(Board);
                 RefreshUi();
@@ -383,6 +421,65 @@ namespace Sheepft.Game
             BeforeTransition();
             int next = stageIndex + 1;
             transition.Play(() => LoadStage(next));
+        }
+
+        // ── 힌트와 건너뛰기 (구현 계획 13절) ──
+
+        /// <summary>힌트 버튼이나 H: 풀이의 다음 한 수를 보여 준다. 벗어났으면 Undo를 깜빡인다.</summary>
+        private void RequestHint()
+        {
+            if (ScreenTransition.Active || playback != null || !HintAvailable) return;
+            if (Board.Result == GameResult.Won || !hint.Request()) return;
+            SoundManager.Play(Sound.Click);
+            UpdateHint();
+        }
+
+        /// <summary>건너뛰기: 이 스테이지는 깨지 않은 채로 다음 스테이지를 열고 넘어간다.</summary>
+        private void SkipStage()
+        {
+            if (ScreenTransition.Active || !hint.Unlocked || stageIndex >= stageCount - 1) return;
+            SaveData.RecordSkip(stageIndex, stageCount);
+            NextStage();
+        }
+
+        /// <summary>힌트가 열리는 순간: 힌트 버튼과 건너뛰기를 보이고, 힌트 버튼이 한 번 튀어 오른다.</summary>
+        private void OnHintUnlocked()
+        {
+            if (ui == null) return;
+            ShowHelp();
+            if (HintAvailable) ui.PopHint();
+        }
+
+        /// <summary>풀이 줄이 있는 스테이지에서 힌트가 열렸다.</summary>
+        private bool HintAvailable => hint != null && hint.Unlocked && Board.Rules.Solution.Count > 0;
+
+        private void ShowHelp()
+        {
+            bool open = Board.Result != GameResult.Won;
+            ui.ShowHelp(open && HintAvailable, open && hint.Unlocked && stageIndex < stageCount - 1);
+        }
+
+        /// <summary>힌트를 켜 두었으면 지금 판에 맞춰 가리킬 화살표나 Undo를 고른다.</summary>
+        private void UpdateHint()
+        {
+            hintArrow = null;
+            bool undo = false;
+            if (hint.Active && Board.Result != GameResult.Won)
+            {
+                switch (HintProgress.Next(session.Moves, Board.Rules.Solution, out var move))
+                {
+                    case HintKind.Move:
+                        hintArrow = arrows.Find(a => a.Open && a.Point == move);
+                        break;
+                    case HintKind.Undo:
+                        undo = true;
+                        break;
+                    default:
+                        hint.Done();
+                        break;
+                }
+            }
+            if (ui != null) ui.SetUndoHint(undo);
         }
 
         /// <summary>전환이 시작되면 마우스를 올린 줄 표시, 화살표, 도착 칸 표시가 구름 밑에 남지 않게 지운다.</summary>
@@ -945,23 +1042,37 @@ namespace Sheepft.Game
             if (ui != null)
             {
                 bool cannotWin = Board.CannotWin && Board.Result != GameResult.Won;
-                ui.ShowCounts(Board.Rules.TurnLimit - Board.TurnsUsed, Board.SheepOnGrass(), Board.Rules.TargetSheep, cannotWin);
+                ShowCounts(Board.SheepOnGrass(), cannotWin);
                 ui.ShowResult(Board.Result, Stars(), stageIndex < stageCount - 1);
+                ShowHelp();
             }
             HideArrows();
+            UpdateHint();
+        }
+
+        /// <summary>남은 턴을 `남은 턴/노릴 별 기준`으로, 양을 `풀 위/목표`로 보여 준다.</summary>
+        private void ShowCounts(int sheepOnGrass, bool cannotWin)
+        {
+            var rules = Board.Rules;
+            int turnsLeft = rules.TurnLimit - Board.TurnsUsed;
+            ui.ShowCounts(turnsLeft, rules.StarTargetTurnsLeft(turnsLeft), sheepOnGrass, rules.TargetSheep, cannotWin);
         }
 
         /// <summary>
         /// 쓴 턴 수로 정하는 별 수. 별 1개는 제한 턴 이내다. 구현 계획 2절.
         /// 근육질 양이 늑대를 쓰러뜨린 엔딩 클리어는 턴과 상관없이 늘 3개다.
+        /// 이 스테이지에서 힌트를 썼으면 hintMaxStars까지만 준다(구현 계획 13절).
         /// </summary>
         private int Stars()
         {
-            if (Board.KnockoutAt != null) return 3;
+            int stars;
             var rules = Board.Rules;
-            if (Board.TurnsUsed <= rules.Star3Turns) return 3;
-            if (Board.TurnsUsed <= rules.Star2Turns) return 2;
-            return 1;
+            if (Board.KnockoutAt != null) stars = 3;
+            else if (Board.TurnsUsed <= rules.Star3Turns) stars = 3;
+            else if (Board.TurnsUsed <= rules.Star2Turns) stars = 2;
+            else stars = 1;
+            if (hint != null && hint.Used) stars = Mathf.Min(stars, Settings.hintMaxStars);
+            return stars;
         }
 
         /// <summary>

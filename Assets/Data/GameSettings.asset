@@ -109,5 +109,12 @@ MonoBehaviour:
   menuLabelFontSize: 4
   menuPanSeconds: 0.6
   menuEnterDelaySeconds: 0.5
+  hintFailedAttempts: 3
+  hintMinSeconds: 180
+  hintRestartMinTurns: 2
+  hintMaxStars: 1
+  hintPopSeconds: 0.5
+  hintPopScale: 1.5
+  hintArrowPulse: 0.2
   backgroundColor: {r: 0.16862746, g: 0.14117648, b: 0.2, a: 1}
   holeColor: {r: 0.101960786, g: 0.08235294, b: 0.1254902, a: 1}

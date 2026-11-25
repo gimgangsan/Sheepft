@@ -69,7 +69,7 @@ README의 이번 버전 범위를 그래픽으로 옮기기 위해 만들어야 
 | `button_menu.aseprite` | 32×32 | `normal`, `hover`, `pressed` | 메뉴 버튼 |
 | `button_level_select.aseprite` | 32×32 | `normal`, `hover`, `pressed` | 레벨 선택 버튼 |
 | `button_next.aseprite` | 32×32 | `normal`, `hover`, `pressed` | 다음 레벨 버튼 |
-| `hud_icons.aseprite` | 16×16 | `turn`, `goal_sheep`, `star`, `star_empty` | 남은 턴, 목표 양 수 옆에 붙는 아이콘. `star`·`star_empty`는 얻은 별과 못 얻은 별(꿈 풍선의 별 표시, "★3 ≤ 6턴" 같은 별 조건) |
+| `hud_icons.aseprite` | 16×16 | `turn`, `goal_sheep`, `star`, `star_empty`, `hint`, `hint_hover` | 남은 턴, 목표 양 수 옆에 붙는 아이콘. `star`·`star_empty`는 얻은 별과 못 얻은 별(꿈 풍선의 별 표시, "★3 ≤ 6턴" 같은 별 조건). `hint`는 힌트 버튼의 전구(유리 노랑, 필라멘트 주황, 쇠 받침), `hint_hover`는 마우스를 올렸을 때 더 밝은 유리와 둘레의 빛살(구현 계획 13절) |
 | `digits.aseprite` | 8×8 | 10프레임, `digits` | 숫자 0–9. 프레임 번호가 숫자다 |
 | `cannot_win.aseprite` | 32×32 | `idle` | "승리 불가" 경고 아이콘(풀이 모두 탐). 글자는 Unity에서 붙인다 |
 

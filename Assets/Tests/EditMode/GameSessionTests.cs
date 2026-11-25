@@ -35,6 +35,19 @@ namespace Sheepft.Tests
         }
 
         [Test]
+        public void Moves_FollowPlayUndoAndRestart()
+        {
+            var session = Make(".S . . . g", "shift: R0:RL  제한 5턴");
+            session.Play(R0Right);
+            session.Play(R0Left);
+            CollectionAssert.AreEqual(new[] { R0Right, R0Left }, session.Moves);
+            session.Undo();
+            CollectionAssert.AreEqual(new[] { R0Right }, session.Moves);
+            session.Restart();
+            Assert.AreEqual(0, session.Moves.Count);
+        }
+
+        [Test]
         public void Undo_WorksAfterTheGameEnded()
         {
             var session = Make(".S . . . g", "shift: R0:R  제한 1턴");

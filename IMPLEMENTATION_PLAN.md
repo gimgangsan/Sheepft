@@ -501,3 +501,22 @@ README에 빠져 있거나 해석이 갈리던 것을 사용자와 정했다. �
 - `EndingCutscene`: 양·늑대·이펙트를 프리팹 대역으로 찍고 Animator를 끈 뒤 `SpriteCatalog`의 프레임과 길이로 직접 넘긴다. 검은 막·흰 막은 판보다 위(정렬 3000번대)의 단색 스프라이트이고, UI(Screen Space Overlay)는 `CanvasGroup` 알파로 숨긴다. 하얗게 덮인 동안 판과 카메라(`FitCamera`)를 되돌리고 결과 창을 띄운 뒤 막을 걷는다.
 - 판 재생을 빨리 감아도 컷씬은 나온다. 컷씬은 `endingSkipDelaySeconds`가 지난 뒤 클릭·키로 건너뛴다. undo·재시작·메뉴·스테이지 바꾸기는 `EndingCutscene.Abort`로 모두 되돌린다.
 - 별은 `KnockoutAt`이 있으면 턴과 상관없이 3개다. 컷씬의 조정값은 `GameSettings`의 "근육질 양이 되는 순간", "엔딩 컷씬". 컷씬 전체 빠르기는 `endingTimeScale`(모든 시간과 프레임 길이에 곱하는 배율)로 한 번에 바꾼다.
+
+## 13. 힌트와 건너뛰기 (2026-11-25 정함)
+
+오래 못 푸는 플레이어를 위한 '천장'. 너무 쉽게 열리면 왔다 갔다만 하다가 답을 보고 넘기게 되므로, shift 수가 아니라 **실패한 시도**를 세고, 힌트는 직접 눌러야 하며, 쓰면 별이 줄어든다.
+
+- 열리는 조건: 실패 `hintFailedAttempts`(3)회 이상, 그 스테이지에서 보낸 시간 `hintMinSeconds`(180초) 이상. 둘 다 채우면 힌트 버튼과 건너뛰기가 함께 열리고, 다시 닫히지 않는다.
+  - 실패 1회: 패배(제한 턴 소진), 또는 턴을 `hintRestartMinTurns`(2) 이상 쓰고 재시작. 한 시도는 한 번만 센다. 진 뒤 undo로 다시 지거나, 진 판을 재시작해도 같은 시도다. 재시작하거나 undo로 처음 상태까지 돌아가면 새 시도다(undo로 돌아간 것은 실패로 세지 않음).
+  - 시간은 게임 화면에 있을 때만 센다(메뉴, 화면 전환 중 제외). 클리어한 판에서는 세지 않는다.
+  - 진행은 스테이지별로 게임을 켜 둔 동안만 기억한다(`GameController`의 `HintProgress` 목록). 저장 파일에는 남기지 않는다.
+- 힌트(위쪽 줄 Undo 왼쪽의 전구, `hud_icons`의 `hint`/`hint_hover`, 키 H): 전구는 `PixelIconButton`이 스프라이트 크기의 두 배 고정 픽셀로 그린다. Aseprite Importer가 프레임을 그림 부분만 잘라 스프라이트로 만들기 때문에(전구 10×14, hover 16×14) Image를 32×32 칸에 늘리면 찌그러진다. 처음 나타날 때 커지는 배율도 0.5 단위로 끊는다. 한 번 누르면 `stages.txt`의 `# 풀이:` 수순에서 **다음 한 수만** 알려 준다. 런타임 solver는 쓰지 않는다.
+  - 지금까지 둔 수가 풀이의 앞부분이면 그다음 수의 shift 화살표를 늘 보이고 커졌다 줄어들게 한다(`hintArrowPulse`). 그 수를 두면 힌트가 꺼진다. 다음 수를 보려면 다시 누른다.
+  - 풀이에서 벗어났으면 Undo 버튼을 깜빡인다. 갈라진 곳까지 undo하면 그 자리에서 다음 수를 보여 준다.
+  - 처음 열릴 때 버튼이 한 번 커졌다 줄어든다(`hintPopSeconds`, `hintPopScale`).
+- 별: 힌트를 쓴 **그 클리어만** 별을 `hintMaxStars`(1)개까지 준다. 엔딩 스테이지도 같다.
+  - 힌트를 누른 뒤 깨기 전까지는 재시작해도 제한이 남는다(이미 답을 봤으므로).
+  - 깬 뒤 새 시도(재시작, undo로 처음 상태까지, 스테이지 다시 열기)를 시작하면 제한이 풀려, 힌트 없이 깨면 별을 제대로 받는다. 저장은 가장 많은 별만 남긴다.
+  - 깬 판을 undo해서 마지막 수만 다시 두는 것은 같은 시도라 제한이 남는다. 깬 뒤 undo해서 힌트를 다시 누르면 다음 클리어까지 제한이 이어진다.
+- 건너뛰기(아래쪽 줄 Next 버튼 자리의 글자 `SKIP`, 버튼 그림 없음, 마우스를 올리면 노랑 `#fcc94b`): 그 스테이지는 깨지 않은 채로(별 0개) 다음 스테이지를 열고(`SaveData.RecordSkip`) 구름 전환으로 넘어간다. 클리어하면 Next 버튼이 나오므로 숨긴다. 마지막 스테이지에는 없다.
+- 코드: `HintProgress`(순수 C#, `HintProgressTests`), `GameSession.Moves`(둔 수), `GameUI.hintButton`·`skipText`(`HoverText`), `GameSettings`의 "힌트와 건너뛰기". 예전 `GameUI.prefab`에는 Sheepft > Setup Game Scene이 힌트 버튼과 건너뛰기 글자를 더한다(`GamePrefabBuilder.UpgradeUi`, 없을 때만). `PixelIconButton`이 없는 예전 힌트 버튼은 지우고 다시 만든다.

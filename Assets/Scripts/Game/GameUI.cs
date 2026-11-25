@@ -22,11 +22,15 @@ namespace Sheepft.Game
         public GameObject cannotWinIcon;
         public Button undoButton;
         public Button restartButton;
+        [Tooltip("힌트(전구) 버튼. 실패를 여러 번 하면 나타난다. 구현 계획 13절.")]
+        public Button hintButton;
 
         [Header("아래쪽 줄")]
         public Button levelSelectButton;
         public Button nextButton;
         public TMP_Text descriptionText;
+        [Tooltip("건너뛰기 글자. 힌트와 함께 열리고, Next 버튼 자리에 보인다.")]
+        public HoverText skipText;
 
         [Header("결과")]
         public GameObject resultPanel;
@@ -67,10 +71,16 @@ namespace Sheepft.Game
         public event Action RestartClicked;
         public event Action NextClicked;
         public event Action LevelSelectClicked;
+        public event Action HintClicked;
+        public event Action SkipClicked;
         public event Action<int> LevelChosen;
 
         private readonly List<Button> levelButtons = new List<Button>();
         private bool pulse;
+        /// <summary>힌트가 풀이에서 벗어났다고 알려 주는 중: Undo 버튼만 깜빡인다.</summary>
+        private bool undoHint;
+        /// <summary>힌트 버튼이 처음 나타나는 연출의 지난 시간. 연출 중이 아니면 음수.</summary>
+        private float hintPopTime = -1f;
 
         private GameSettings settings;
         private GameResult shownResult = GameResult.InProgress;
@@ -103,6 +113,9 @@ namespace Sheepft.Game
             Bind(restartButton, () => { if (RestartClicked != null) RestartClicked(); });
             Bind(nextButton, () => { if (NextClicked != null) NextClicked(); });
             Bind(levelSelectButton, () => { if (LevelSelectClicked != null) LevelSelectClicked(); });
+            Bind(hintButton, () => { if (HintClicked != null) HintClicked(); });
+            if (skipText != null) skipText.Clicked += () => { if (SkipClicked != null) SkipClicked(); };
+            ShowHelp(false, false);
             Bind(levelSelectCloseButton, CloseLevelSelect);
             if (levelSelectPanel != null) levelSelectPanel.SetActive(false);
             if (resultPanel != null) resultPanel.SetActive(false);
@@ -130,11 +143,38 @@ namespace Sheepft.Game
             if (descriptionText != null) descriptionText.text = description ?? "";
         }
 
-        public void ShowCounts(int turnsLeft, int sheepOnGrass, int targetSheep, bool cannotWin)
+        /// <summary>starTarget은 지금 노릴 수 있는 별 기준의 남은 턴이다(`LevelRules.StarTargetTurnsLeft`). `남은 턴/기준`으로 쓴다.</summary>
+        public void ShowCounts(int turnsLeft, int starTarget, int sheepOnGrass, int targetSheep, bool cannotWin)
         {
-            if (turnsText != null) turnsText.text = Mathf.Max(0, turnsLeft).ToString();
+            if (turnsText != null) turnsText.text = Mathf.Max(0, turnsLeft) + "/" + starTarget;
             if (sheepText != null) sheepText.text = sheepOnGrass + "/" + targetSheep;
             if (cannotWinIcon != null) cannotWinIcon.SetActive(cannotWin);
+        }
+
+        /// <summary>힌트 버튼과 건너뛰기 글자를 보이거나 숨긴다.</summary>
+        public void ShowHelp(bool hint, bool skip)
+        {
+            if (hintButton != null)
+            {
+                hintButton.gameObject.SetActive(hint);
+                if (!hint) { hintPopTime = -1f; hintButton.transform.localScale = Vector3.one; }
+            }
+            if (skipText != null) skipText.gameObject.SetActive(skip);
+        }
+
+        /// <summary>힌트 버튼이 처음 나타날 때: 커졌다가 제 크기로 돌아온다.</summary>
+        public void PopHint()
+        {
+            if (hintButton == null || settings == null) return;
+            hintPopTime = 0f;
+            ApplyHintPop();
+        }
+
+        /// <summary>힌트가 풀이에서 벗어났다고 알릴 때 Undo 버튼을 깜빡인다.</summary>
+        public void SetUndoHint(bool on)
+        {
+            undoHint = on;
+            if (!on && !pulse) SetScale(1f);
         }
 
         /// <summary>
@@ -313,12 +353,19 @@ namespace Sheepft.Game
             if (levelSelectPanel != null) levelSelectPanel.SetActive(false);
         }
 
-        // ── 패배했을 때 undo와 재시작을 눈에 띄게 ──
+        // ── 패배했을 때 undo와 재시작을, 힌트가 벗어났을 때 undo를 눈에 띄게 ──
 
         private void Update()
         {
             UpdateStars();
-            if (pulse) SetScale(1f + 0.12f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)));
+            float beat = 1f + 0.12f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f));
+            if (pulse) SetScale(beat);
+            else if (undoHint && undoButton != null) undoButton.transform.localScale = new Vector3(beat, beat, 1f);
+            if (hintPopTime >= 0f)
+            {
+                hintPopTime += Time.unscaledDeltaTime;
+                ApplyHintPop();
+            }
         }
 
         private void SetScale(float scale)
@@ -326,6 +373,21 @@ namespace Sheepft.Game
             var s = new Vector3(scale, scale, 1f);
             if (undoButton != null) undoButton.transform.localScale = s;
             if (restartButton != null) restartButton.transform.localScale = s;
+        }
+
+        /// <summary>
+        /// 앞의 40%는 0에서 hintPopScale까지 커지고, 나머지는 1로 줄어든다.
+        /// 도트가 고르게 보이게 배율은 0.5 단위로 끊는다(아이콘이 16×16의 두 배라서 0.5배 = 원래 픽셀 1배).
+        /// </summary>
+        private void ApplyHintPop()
+        {
+            float k = hintPopTime / settings.hintPopSeconds;
+            float scale;
+            if (k >= 1f) { scale = 1f; hintPopTime = -1f; }
+            else if (k < 0.4f) scale = Mathf.Lerp(0f, settings.hintPopScale, k / 0.4f);
+            else scale = Mathf.Lerp(settings.hintPopScale, 1f, (k - 0.4f) / 0.6f);
+            scale = Mathf.Round(scale * 2f) / 2f;
+            hintButton.transform.localScale = new Vector3(scale, scale, 1f);
         }
     }
 }

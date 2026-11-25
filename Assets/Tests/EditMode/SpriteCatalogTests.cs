@@ -72,6 +72,8 @@ namespace Sheepft.Tests
         [TestCase("button_next", "normal")]
         [TestCase("hud_icons", "turn")]
         [TestCase("hud_icons", "goal_sheep")]
+        [TestCase("hud_icons", "hint")]
+        [TestCase("hud_icons", "hint_hover")]
         [TestCase("cannot_win", "idle")]
         public void Catalog_HasTag(string sheetName, string tagName)
         {
