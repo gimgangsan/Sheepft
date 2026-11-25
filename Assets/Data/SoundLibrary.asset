@@ -49,25 +49,29 @@ MonoBehaviour:
     pitchJitter: 0.1
     delay: 0
   eat:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: e1dea053c8ad0f04c80e510780c702c5, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   wolfEat:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: c2b731a67c2b5084f8330d652e7d291e, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.08
     delay: 0
   sheepEaten:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: ac1bd98f2eb1f3645bf9bac7259b83ad, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
     delay: 0.1
   sheepArrive:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: ac1bd98f2eb1f3645bf9bac7259b83ad, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0.05
@@ -76,36 +80,40 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: debbdae79edba354499caa6c009cd089, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.2
     pitchJitter: 0.05
     delay: 0
   cowMoo:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: a38008b74c7f27142806d9e87efa3b14, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.2
     pitchJitter: 0.05
     delay: 0
   splash:
     clips:
     - {fileID: 8300000, guid: 5d29baa3fba8bbd48ad3c13a7c1af6bd, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.8
     pitchJitter: 0.08
     delay: 0
   sizzle:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 571393685c78a73458b0ea99a5d558cf, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.8
     pitchJitter: 0.08
     delay: 0
   fire:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: c4d3c49332ac72c40b74879fe57aace5, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.8
     pitchJitter: 0.08
     delay: 0
   click:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 20031543b13a8924899f813761c77556, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
@@ -140,25 +148,29 @@ MonoBehaviour:
     pitchJitter: 0
     delay: 0
   sheepBuff:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: f783335f6095dcf4d848b0dc8b7e0d57, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   uppercutCharge:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: bd29b280c95999b469d3dc93f4b515ed, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   wolfHit:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: e1290312a2165734eab31e315be6c7c6, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
     delay: 0
   wolfYelp:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 816788e84a1ee0f4094ef2f6b691ab7a, type: 3}
     clip: {fileID: 0}
     volume: 1
     pitchJitter: 0
