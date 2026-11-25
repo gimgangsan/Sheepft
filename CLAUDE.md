@@ -9,7 +9,7 @@ Claude Code가 이 프로젝트에서 작업할 때 따르는 지침이다.
 - 게임 규칙의 기준 문서는 [README.md](README.md)다. 게임 로직을 만들거나 고칠 때는 README를 먼저 읽고, 다르면 README를 따른다.
 - 코드 구조와 작업 순서는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)를 따른다.
 - 엔진: Unity 6000.5.0f1, URP, Input System
-- **인게임 텍스트는 모두 영어로 쓴다** (스테이지 이름·설명, 버튼, 승패 문구). 문서와 코드 주석은 한국어다.
+- **인게임 텍스트는 모두 영어로 쓴다** (스테이지 이름·설명, 버튼, 승패 문구). 문서와 코드 주석은 한국어다. 단, 외부에 공개하는 [LICENSE](LICENSE)와 [CREDITS.md](CREDITS.md)는 영어로 쓴다. `Assets/Audio/`에 소리를 추가하면 CREDITS.md 표에도 적는다.
 - UI 기준 해상도는 640×360이다.
 - 2D 도트 그래픽. 스프라이트는 Aseprite로 만든다. 만들 스프라이트 목록과 파일별 사양은 [SPRITES.md](SPRITES.md)에 있다.
 
