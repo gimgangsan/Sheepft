@@ -84,18 +84,6 @@ g  .  .   .
 .   .  .   .  .
 .S  .  .   .  .
 
-# Sleight Of Hoof  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD  제한 12턴  목표 양 2
-# 풀이: R4:L, R4:L, C2:U, R2:R, C1:U, C1:U, R2:R, C5:U, C5:U
-@desc Now you see the wolf, now you don't. SHIFT it across the GAP.
-@stars 9 10
-@intent WolfWrap
--  .   .  .   .  g
--  .   x  x   x  .
-#  .S  x  x   x  .
--  .   x  x   x  .
--  .W  .  .S  .  .
--  -   -  #   -  -
-
 # SACRIFICE THE SHEEP!!!  shift: R0:R, R1:RL, R2:RL, R3:RL, R4:RL, C0:D, C1:UD, C2:UD, C3:UD, C4:UD  제한 10턴  목표 양 2
 # 풀이: R2:L, R3:L, R3:L, C1:D, C1:D, R4:L, C0:D
 @desc A WOLF with its mouth full can't chase. SACRIFICE THE SHEEP!
@@ -118,17 +106,6 @@ gW  #   .   .   .
 .   .  .   .  #
 .   .  .   #  gW
 
-# The Pack's Table  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 10턴  목표 양 2
-# 풀이: R0:R, R2:R, R0:R, C0:U, C0:U, R3:L, R3:L
-@desc A PACK's reach is wide. One must go.
-@stars 7 8
-@intent SheepMerge WolfEat
-.S  #  .    .S  .
-.   .  .    .   .
-.   .  .W2  .   .
-.   .  .    g   .
-.S  .  .    .   .
-
 # Wolf Barbecue  shift: R0:RL, R1:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 9턴  목표 양 1
 # 풀이: C0:U, R0:L, C1:U, R0:R, R0:R, R0:R, C3:U
 @desc BURNED animals are helpless. Let's give 'em a good sear!
@@ -145,6 +122,29 @@ gW  #   .   .   .
 .   ~   t  .  .
 .W  .S  t  .  g
 #   #   ^  .  .
+
+# The Pack's Table  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 10턴  목표 양 2
+# 풀이: R0:R, R2:R, R0:R, C0:U, C0:U, R3:L, R3:L
+@desc A PACK's reach is wide. One must go.
+@stars 7 8
+@intent SheepMerge WolfEat
+.S  #  .    .S  .
+.   .  .    .   .
+.   .  .W2  .   .
+.   .  .    g   .
+.S  .  .    .   .
+
+# Sleight Of Hoof  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD  제한 12턴  목표 양 2
+# 풀이: R4:L, R4:L, C2:U, R2:R, C1:U, C1:U, R2:R, C5:U, C5:U
+@desc Now you see the wolf, now you don't. SHIFT it across the GAP.
+@stars 9 10
+@intent WolfWrap
+-  .   .  .   .  g
+-  .   x  x   x  .
+#  .S  x  x   x  .
+-  .   x  x   x  .
+-  .W  .  .S  .  .
+-  -   -  #   -  -
 
 # Hot-Tempered Goat  shift: R0:RL, R1:RL, R2:RL, R3:RL, R4:RL, R5:RL, C0:UD, C1:U, C2:UD  제한 6턴  목표 양 1
 # 풀이: R1:L, C2:D, R2:L, R4:L
@@ -209,9 +209,9 @@ t   #  .   #  #    #   t
 .   .  .   .  .    .S  t
 t   #  .H  #  #    #   t
 
-# Basket Across the Water  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:U, C1:UD, C2:UD, C3:UD, C4:UD  제한 9턴  목표 양 1
+# 'Stall'ing  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:U, C1:UD, C2:UD, C3:UD, C4:UD  제한 9턴  목표 양 1
 # 풀이: R0:R, R2:R, C2:D, R2:R, R2:R
-@desc A horse that sees a basket it cannot reach just stands there, and the wolf on its back cannot get off.
+@desc No PATH? Animals just WAIT. Hope the WOLF enjoys the ride.
 @stars 5 7
 @intent HorseNoPath RideHeld
 .A  .    #  #  #
@@ -231,19 +231,9 @@ t   #  .H  #  #    #   t
 -   -  -  -  .A  -
 -   -  -  -  gW  -
 
-# Stubborn Cow  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 7턴  목표 양 1
-# 풀이: R2:R, C2:D, R2:R, C2:U, R0:R
-@desc Once a COW smells FRUIT, there's no stopping it. Moo-ve with it or lose it.
-@stars 5 7
-@intent CowPushSheep
-.M  .A  .  .  g
-#   t   x  t  #
-.S  .   .  #  t
-#   t   #  t  #
-
 # Cow Bulldozer  shift: R0:RL, R1:RL, R2:R, R3:RL, R4:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 11턴  목표 양 1
 # 풀이: R4:R, R4:R, R0:L, C1:D, C1:D, C1:D, R2:R
-@desc This COW doesn't brake for WOLVES.
+@desc Once a COW smells FRUIT within 3 tiles, there's no stopping it.
 @stars 7 9
 @intent WolfBurned CowPushWolf
 .A  .  .   .  .
@@ -251,6 +241,16 @@ t   #  .H  #  #    #   t
 ^   .  gW  .  .M
 #   #  #   #  #
 .   .  .   .  .S
+
+# Stubborn Cow  shift: R0:RL, R1:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD  제한 7턴  목표 양 1
+# 풀이: R2:R, C2:D, R2:R, C2:U, R0:R
+@desc Moo-ve with it or lose it.
+@stars 5 7
+@intent CowPushSheep
+.M  .A  .  .  g
+#   t   x  t  #
+.S  .   .  #  t
+#   t   #  t  #
 
 # Dinner Is Served  shift: R0:RL, R2:RL, R3:RL, C0:UD, C1:UD, C2:UD, C3:UD, C4:UD, C5:UD, C6:D, C7:UD  제한 11턴  목표 양 1
 # 풀이: C1:U, R0:R, R0:R, R0:R, C3:D, C1:D, C2:D, C7:U, R2:L
