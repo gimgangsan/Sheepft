@@ -29,7 +29,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 98fc4298e92ecc24f9baedb85d14d4e4, type: 3}
     - {fileID: 8300000, guid: cee74bf6dfedbc24aafa2577ee4b4f22, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.6
     pitchJitter: 0.1
     delay: 0
   impact:
@@ -45,7 +45,7 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 72375e9107fa6b74c82d9e8ad041b38e, type: 3}
     - {fileID: 8300000, guid: dbe097cd8cdafde49b7df35873050626, type: 3}
     clip: {fileID: 0}
-    volume: 1
+    volume: 0.4
     pitchJitter: 0.1
     delay: 0
   eat:
@@ -94,21 +94,21 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: 5d29baa3fba8bbd48ad3c13a7c1af6bd, type: 3}
     clip: {fileID: 0}
-    volume: 0.8
+    volume: 0.7
     pitchJitter: 0.08
     delay: 0
   sizzle:
     clips:
     - {fileID: 8300000, guid: 571393685c78a73458b0ea99a5d558cf, type: 3}
     clip: {fileID: 0}
-    volume: 0.8
+    volume: 0.6
     pitchJitter: 0.08
     delay: 0
   fire:
     clips:
     - {fileID: 8300000, guid: c4d3c49332ac72c40b74879fe57aace5, type: 3}
     clip: {fileID: 0}
-    volume: 0.8
+    volume: 0.6
     pitchJitter: 0.08
     delay: 0
   click:
